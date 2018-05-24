@@ -24,7 +24,7 @@ public class Sensor extends AbstractVerticle {
     {
         this.ref = ref;
         this.type = type;
-        this.polling = polling;
+        this.polling = polling*1000;
         this.topic=topic;
     }
 

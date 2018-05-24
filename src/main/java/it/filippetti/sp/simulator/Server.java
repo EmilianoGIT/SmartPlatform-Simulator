@@ -84,19 +84,21 @@ public class Server extends AbstractVerticle {
 
 
                 SetOfInstancesForSimulation setOfInstancesForSimulation=fromJsonForSimulationToInstancesForSimulation(new JSONObject(routingContext.getBodyAsString()));
-                engine=new Engine(setOfInstancesForSimulation.getSimulationStartDate(), setOfInstancesForSimulation.getSimulationEndDate(), setOfInstancesForSimulation.getScenario());
+                engine=new Engine(setOfInstancesForSimulation.getSimulationStartDate(), setOfInstancesForSimulation.getPeriodOfTimeOfSimulation(), setOfInstancesForSimulation.getScenario());
 
                 vertx.deployVerticle(engine);
                 routingContext.response()
                         .setStatusCode(201)
                         .putHeader("content-type", "application/json; charset=utf-8")
                         .end(new JSONObject().put("result", "Nice JSON").toString());
+                System.out.println(routingContext.getBody().toString());
             } catch (Exception e) {
                 e.printStackTrace();
                 routingContext.response()
                         .setStatusCode(404)
                         .putHeader("content-type", "application/json; charset=utf-8")
                         .end(new JSONObject().put("result", "Bad JSON").toString());
+                System.out.println(routingContext.getBody().toString());
             }
         }
 
@@ -138,17 +140,26 @@ public class Server extends AbstractVerticle {
         List<Sensor> sensorsToInsertInScenario = new ArrayList<>();
         DateTime ssd;
         DateTime sed;
+        int periodOfTimeOfSimulation; //in minutes
+
+
+
 
 
         try {
+          if(jsonOfSimulation.get("simStartDate").toString().equals(""))
+              ssd=DateTime.now();
+          else ssd=DateTime.parse(jsonOfSimulation.get("simStartDate").toString());
 
-            ssd=DateTime.parse(jsonOfSimulation.get("simulationStartDate").toString());
-            sed=DateTime.parse(jsonOfSimulation.get("simulationEndDate").toString());
+          periodOfTimeOfSimulation=Integer.parseInt(jsonOfSimulation.get("simDuration").toString());
 
-            if(!sed.isAfter(ssd) && !ssd.isAfterNow() && !sed.isAfterNow()) throw new Exception();
+            //sed=DateTime.parse(jsonOfSimulation.get("simulationEndDate").toString());
 
-            String scenName = jsonOfSimulation.get("scenName").toString();
-            JSONArray jsonArrayOfSensors = jsonOfSimulation.getJSONArray("sensors");
+            //if(!sed.isAfter(ssd) && !ssd.isAfterNow() && !sed.isAfterNow()) throw new Exception();
+
+            JSONObject jsonObjectOfScenario = jsonOfSimulation.getJSONObject("scenario");
+            String scenName = jsonObjectOfScenario.get("sceName").toString();
+            JSONArray jsonArrayOfSensors = jsonObjectOfScenario.getJSONArray("sensors");
             for (int i = 0; i < jsonArrayOfSensors.length(); i++) {
 
                 JSONObject jsonObjectOfSensor = jsonArrayOfSensors.getJSONObject(i);
@@ -209,7 +220,7 @@ public class Server extends AbstractVerticle {
                     instanceOfScenario.addSensor(sensorsToInsertInScenario.get(i));
                 }
             }
-            return new SetOfInstancesForSimulation(instanceOfScenario, ssd, sed);
+            return new SetOfInstancesForSimulation(instanceOfScenario, ssd, periodOfTimeOfSimulation);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -222,11 +233,13 @@ public class Server extends AbstractVerticle {
         Scenario s;
         DateTime simulationStartDate;
         DateTime simulationEndDate;
-        public SetOfInstancesForSimulation(Scenario s,DateTime simulationStartDate, DateTime simulationEndDate)
+        int periodOfTimeOfSimulation;
+        public SetOfInstancesForSimulation(Scenario s,DateTime simulationStartDate,int periodOfTimeOfSimulation)
         {
             this.s=s;
             this.simulationStartDate=simulationStartDate;
-            this.simulationEndDate=simulationEndDate;
+
+            this.periodOfTimeOfSimulation=periodOfTimeOfSimulation;
         }
 
         public Scenario getScenario()
@@ -237,9 +250,9 @@ public class Server extends AbstractVerticle {
             return this.simulationStartDate;
         }
 
-        public DateTime getSimulationEndDate()
+        public int getPeriodOfTimeOfSimulation()
         {
-            return this.simulationEndDate;
+            return this.periodOfTimeOfSimulation;
         }
     }
 

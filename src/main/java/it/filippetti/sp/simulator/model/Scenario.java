@@ -9,12 +9,12 @@ import java.util.HashSet;
 
 public class Scenario {
 
-    String scenName;
+    String sceName;
     Set<Sensor> sensors = new HashSet<Sensor>();
 
     public Scenario(String scenName, Sensor sensor) {
 
-        this.scenName=scenName;
+        this.sceName=scenName;
         try{
             if(sensor.getSumOfProbability()!=100)
                 throw new ErrorProbability();
@@ -49,7 +49,7 @@ public class Scenario {
 
 
     public String getScenName()
-    {return this.scenName;}
+    {return this.sceName;}
 
     public Set<Sensor> getSensors() {
         return this.sensors;

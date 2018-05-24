@@ -17,24 +17,29 @@ public class Engine extends AbstractVerticle {
     public Scenario scenario;
     Logger logger=new Logger(this);
     DateTime simulationStartDate;
-    DateTime simulationEndDate;
+    int periodOfTimeOfSimulation;
 
-    public Engine(DateTime simulationStartDate, DateTime simulationEndDate, Scenario scenario) {
+    public Engine(DateTime simulationStartDate, int periodOfTimeOfSimulation, Scenario scenario) {
 
         this.scenario=scenario;
         this.simulationStartDate=simulationStartDate;
-        this.simulationEndDate=simulationEndDate;
+        this.periodOfTimeOfSimulation=periodOfTimeOfSimulation;
 
     }
 
     @Override
     public void start() throws Exception {
+        Integer periodOfTimeUntilSimulationStarts;
+if(simulationStartDate.isBeforeNow())
+            periodOfTimeUntilSimulationStarts=1;
+else   {
+    Seconds secondsToStartSimulation = Seconds.secondsBetween(DateTime.now(),simulationStartDate);
+    periodOfTimeUntilSimulationStarts=secondsToStartSimulation.getSeconds()*1000; //to get millis
+}
 
+            //Seconds secondsOfSimulationPeriod = Seconds.secondsBetween(DateTime.now(), simulationEndDate);
 
-            Seconds secondsToStartSimulation = Seconds.secondsBetween(DateTime.now(),simulationStartDate);
-            Seconds secondsOfSimulationPeriod = Seconds.secondsBetween(DateTime.now(), simulationEndDate);
-            Integer periodOfTimeUntilSimulationStarts=secondsToStartSimulation.getSeconds()*1000; //to get millis
-            Integer periodOfTimeOfSimulation=secondsOfSimulationPeriod.getSeconds()*1000; //to get millis
+           // Integer periodOfTimeOfSimulation=secondsOfSimulationPeriod.getSeconds()*60000; //to get millis from minute
             logger.clearProducedSnapshots();
             vertx.deployVerticle(logger);
 
@@ -45,22 +50,25 @@ public class Engine extends AbstractVerticle {
         vertx.setTimer(periodOfTimeUntilSimulationStarts, new Handler<Long>() {
             @Override
             public void handle(Long aLong) {
-                System.out.println("La simulazione è iniziata in data-ora: " + simulationStartDate.toString());
+                System.out.println("La simulazione è iniziata in data-ora: " + DateTime.now().toString());
                 for (Sensor s : scenario.getSensors()) {
                     vertx.deployVerticle(s);
                 }
             }
         });
-        vertx.setTimer(periodOfTimeOfSimulation, new Handler<Long>() {
-            @Override
-            public void handle(Long aLong) {
-                System.out.println("La simulazione è terminata in data-ora: " + simulationEndDate.toString());
-                for (Sensor s : scenario.getSensors()) {
-                    vertx.undeploy(s.deploymentID());
+
+            vertx.setTimer(periodOfTimeOfSimulation*60000, new Handler<Long>() {
+                @Override
+                public void handle(Long aLong) {
+                    System.out.println("La simulazione è terminata in data-ora: " + DateTime.now().toString());
+                    for (Sensor s : scenario.getSensors()) {
+                        vertx.undeploy(s.deploymentID());
+                    }
+                    vertx.undeploy(deploymentID());
                 }
-                vertx.undeploy(deploymentID());
-            }
-        });
+            });
+
+
 
     }
 
@@ -84,9 +92,6 @@ public class Engine extends AbstractVerticle {
         this.simulationStartDate=simulationStartDate;
     }
 
-    public void setSimulationEndDate(DateTime simulationEndDate){
-        this.simulationEndDate=simulationEndDate;
-    }
 
 
 

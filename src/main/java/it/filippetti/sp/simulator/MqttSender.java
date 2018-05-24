@@ -20,12 +20,10 @@ public class MqttSender extends AbstractVerticle {
     public void start() throws Exception {
 
         MqttClientOptions options = new MqttClientOptions();
-        // specify max size of message in bytes
-        options.setMaxMessageSize(100_000_000);
 
         MqttClient client = MqttClient.create(vertx, options);
        // MqttClient client = MqttClient.create(vertx);
-        client.connect(1883, "192.168.104.171", s -> {
+        client.connect(1883, "192.168.1.9", s -> {
         });
 
 

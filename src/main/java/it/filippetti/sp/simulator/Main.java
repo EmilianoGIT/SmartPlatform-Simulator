@@ -1,14 +1,34 @@
 package it.filippetti.sp.simulator;
 
+
+import com.mongodb.*;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.util.JSON;
 import io.vertx.core.Vertx;
 import org.json.JSONArray;
 import org.json.JSONObject;
+
+import javax.swing.text.Document;
 
 public class Main {
 
     public static void main(String[] args) throws Exception {
 
+        MongoClient mongoClient=new MongoClient("localhost",27017 );
+        DB db = mongoClient.getDB("simulator");
+        DBCollection collection=db.getCollection("scenarios");
 
+        JSONObject jo=new JSONObject();
+        jo.put("ciao", 2);
+
+        DBObject dbObject = (DBObject) JSON
+                .parse(jo.toString());
+        collection.insert(dbObject);
+
+        DBCursor dbCursor=collection.find();
+        for(DBObject dbO: dbCursor)
+        {System.out.println(dbO.toString());}
         Vertx vertx = Vertx.vertx();
         vertx.deployVerticle(new Server());
 
