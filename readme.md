@@ -54,7 +54,7 @@ Precisazioni:
 -ogni sensore deve avere "ref" diversa nello scenario.
 
 
-E' possibile fermare la simulazione in corso con l'api "api/engine/start_simulation" (GET)
+E' possibile fermare la simulazione in corso con l'api "api/engine/stop_simulation" (GET)
 Per vedere gli snapshots prodotti durante è dopo la simulazione è possibile utilizzare l'api "api/engine/produced_snapshots" (GET), che risponde con un array di snapshots
 
 Un esempio di Json di simulazione:
