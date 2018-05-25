@@ -54,19 +54,21 @@ else   {
                 for (Sensor s : scenario.getSensors()) {
                     vertx.deployVerticle(s);
                 }
+
+                vertx.setTimer(periodOfTimeOfSimulation, new Handler<Long>() {
+                    @Override
+                    public void handle(Long aLong) {
+                        System.out.println("La simulazione è terminata in data-ora: " + DateTime.now().toString());
+                        for (Sensor s : scenario.getSensors()) {
+                            vertx.undeploy(s.deploymentID());
+                        }
+                        vertx.undeploy(deploymentID());
+                    }
+                });
             }
         });
 
-            vertx.setTimer(periodOfTimeOfSimulation*60000, new Handler<Long>() {
-                @Override
-                public void handle(Long aLong) {
-                    System.out.println("La simulazione è terminata in data-ora: " + DateTime.now().toString());
-                    for (Sensor s : scenario.getSensors()) {
-                        vertx.undeploy(s.deploymentID());
-                    }
-                    vertx.undeploy(deploymentID());
-                }
-            });
+
 
 
 

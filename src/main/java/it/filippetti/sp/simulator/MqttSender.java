@@ -10,9 +10,13 @@ import io.vertx.mqtt.MqttClientOptions;
 
 public class MqttSender extends AbstractVerticle {
 
-    public MqttSender()
-    {
+    String brokerMQTTAddress;
+    int port;
 
+    public MqttSender(String brokerMQTTAddress,int port)
+    {
+        this.brokerMQTTAddress=brokerMQTTAddress;
+        this.port=port;
     }
 
 
@@ -23,7 +27,7 @@ public class MqttSender extends AbstractVerticle {
 
         MqttClient client = MqttClient.create(vertx, options);
        // MqttClient client = MqttClient.create(vertx);
-        client.connect(1883, "192.168.1.9", s -> {
+        client.connect(this.port, this.brokerMQTTAddress, s -> {
         });
 
 

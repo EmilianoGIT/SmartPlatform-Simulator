@@ -1,5 +1,7 @@
 package it.filippetti.sp.simulator;
 
+import com.mongodb.*;
+import com.mongodb.util.JSON;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerResponse;
@@ -11,29 +13,39 @@ import it.filippetti.sp.simulator.model.MeasureType;
 import it.filippetti.sp.simulator.model.Scenario;
 import it.filippetti.sp.simulator.model.SnapshotModel;
 import it.filippetti.sp.simulator.model.TypeOfArray;
+import org.bson.types.ObjectId;
 import org.joda.time.DateTime;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import org.json.JSONString;
-
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public class Server extends AbstractVerticle {
 
 
     Engine engine=null;
+    MqttSender mqttSender=null;
+    MongoClient mongoClient=null;
+    DB db=null;
+
     public Server() {
 
     }
 
     @Override
     public void start(Future<Void> fut) throws InterruptedException {
-
-        MqttSender mqttSender=new MqttSender();
-
+/*
+        mqttSender=new MqttSender("localhost", 1883);
         vertx.deployVerticle(mqttSender);
+*/
+
+/*
+        mongoClient=new com.mongodb.MongoClient("localhost",27017 );
+        db = mongoClient.getDB("simulator");
+        */
 
 
 
@@ -66,6 +78,8 @@ public class Server extends AbstractVerticle {
         router.post("/api/engine/start_simulation").handler(this::startSimulation);
         router.get("/api/engine/stop_simulation").handler(this::stopSimulation);
         router.get("/api/engine/produced_snapshots").handler(this::getProducedSnapshots);
+        router.get("/api/repository/simulator/scenarios/:id").handler(this::getScenario);
+       // router.post("/api/repository/simulator/scenarios").handler(this::insertScenario);
 
     }
 
@@ -131,7 +145,44 @@ public class Server extends AbstractVerticle {
                     .end(Json.encodePrettily("L'engine non è in funzione"));
         }
 
+
     }
+    private void getScenario(RoutingContext routingContext) {
+        String id = routingContext.request().getParam("id");
+        if (id == null) {
+            routingContext.response().setStatusCode(400).end();
+        } else {
+
+            DBCollection collection=db.getCollection("scenarios");
+
+            BasicDBObject query = new BasicDBObject();
+            query.put("_id", new ObjectId(id));
+            DBObject dbObject=collection.findOne(query);
+            dbObject.removeField("_id");
+            routingContext.response()
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .setStatusCode(200).
+                    end(dbObject.toString());
+        }
+        /*
+        JSONObject jo=new JSONObject();
+        jo.put("ciao", 2);
+
+        DBObject dbObject = (DBObject) JSON
+                .parse(jo.toString());
+
+        DBCollection collection=db.getCollection("scenarios");
+        collection.insert(dbObject);
+
+        DBCursor dbCursor=collection.find().limit(3);
+        for(DBObject dbO: dbCursor)
+        {System.out.println(dbO.toString());}
+*/
+
+    }
+
+
+
 
 
     private SetOfInstancesForSimulation fromJsonForSimulationToInstancesForSimulation(JSONObject jsonOfSimulation) throws Exception, ErrorDate{
@@ -151,7 +202,30 @@ public class Server extends AbstractVerticle {
               ssd=DateTime.now();
           else ssd=DateTime.parse(jsonOfSimulation.get("simStartDate").toString());
 
-          periodOfTimeOfSimulation=Integer.parseInt(jsonOfSimulation.get("simDuration").toString());
+            String regexTimer = "[0-9][0-9]:[0-5][0-9]:[0-5][0-9]";
+            Pattern pattern = Pattern.compile(regexTimer);
+            String simDuration=jsonOfSimulation.get("simDuration").toString();
+            Matcher matcher = pattern.matcher(simDuration);
+
+            if(matcher.find())
+            {
+                int numberOfHoursInInt=(Character.getNumericValue(simDuration.charAt(0))*10)+(Character.getNumericValue(simDuration.charAt(1)));
+                int numberOfMinutesInInt=(Character.getNumericValue(simDuration.charAt(3))*10)+(Character.getNumericValue(simDuration.charAt(4)));
+                int numberOfSecondsInInt=(Character.getNumericValue(simDuration.charAt(6))*10)+(Character.getNumericValue(simDuration.charAt(7)));
+
+                int hoursInMillis=numberOfHoursInInt*3600000;
+                int minutesInMillis=numberOfMinutesInInt*60000;
+                int secondsInMillis=numberOfSecondsInInt*1000;
+
+
+                periodOfTimeOfSimulation=hoursInMillis+minutesInMillis+secondsInMillis;
+            }
+            else throw new Exception();
+
+
+
+
+          //periodOfTimeOfSimulation=Integer.parseInt(jsonOfSimulation.get("simDuration").toString());
 
             //sed=DateTime.parse(jsonOfSimulation.get("simulationEndDate").toString());
 
