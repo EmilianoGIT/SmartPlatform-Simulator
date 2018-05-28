@@ -37,15 +37,14 @@ public class Server extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> fut) throws InterruptedException {
-/*
-        mqttSender=new MqttSender("localhost", 1883);
-        vertx.deployVerticle(mqttSender);
-*/
 
-/*
+        mqttSender=new MqttSender("192.168.200.128", 1883);
+        vertx.deployVerticle(mqttSender);
+
+
+
         mongoClient=new com.mongodb.MongoClient("localhost",27017 );
         db = mongoClient.getDB("simulator");
-        */
 
 
 
@@ -76,9 +75,13 @@ public class Server extends AbstractVerticle {
 
         router.route().handler(BodyHandler.create());
         router.post("/api/engine/start_simulation").handler(this::startSimulation);
+        router.post("/api/engine/start_simulation_with_scenario_from_repository").handler(this::startSimulationWithScenarioFromRepository);
         router.get("/api/engine/stop_simulation").handler(this::stopSimulation);
         router.get("/api/engine/produced_snapshots").handler(this::getProducedSnapshots);
-        router.get("/api/repository/simulator/scenarios/:id").handler(this::getScenario);
+        router.get("/api/repository/simulator/scenarios/:id").handler(this::getOneScenarioFromRepository);
+        router.get("/api/repository/simulator/scenarios").handler(this::getScenariosFromRepository);
+        router.post("/api/repository/simulator/scenarios").handler(this::createScenarioInRepository);
+        router.delete("/api/repository/simulator/scenarios/:id").handler(this::deleteScenarioInRepository);
        // router.post("/api/repository/simulator/scenarios").handler(this::insertScenario);
 
     }
@@ -102,8 +105,11 @@ public class Server extends AbstractVerticle {
 
                 vertx.deployVerticle(engine);
                 routingContext.response()
-                        .setStatusCode(201)
+                        .setStatusCode(200)
                         .putHeader("content-type", "application/json; charset=utf-8")
+                        .putHeader("Access-Control-Allow-Origin", "*")
+                        .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                        .putHeader("Access-Control-Allow-Credentials", "true")
                         .end(new JSONObject().put("result", "Nice JSON").toString());
                 System.out.println(routingContext.getBody().toString());
             } catch (Exception e) {
@@ -111,11 +117,18 @@ public class Server extends AbstractVerticle {
                 routingContext.response()
                         .setStatusCode(404)
                         .putHeader("content-type", "application/json; charset=utf-8")
+                        .putHeader("Access-Control-Allow-Origin", "*")
+                        .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                        .putHeader("Access-Control-Allow-Credentials", "true")
                         .end(new JSONObject().put("result", "Bad JSON").toString());
                 System.out.println(routingContext.getBody().toString());
             }
         }
 
+        private void startSimulationWithScenarioFromRepository(RoutingContext routingContext)
+        {
+
+        }
 
     private void stopSimulation(RoutingContext routingContext) {
 
@@ -124,6 +137,9 @@ public class Server extends AbstractVerticle {
 
         routingContext.response()
                 .putHeader("content-type", "application/json; charset=utf-8")
+                .putHeader("Access-Control-Allow-Origin", "*")
+                .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                .putHeader("Access-Control-Allow-Credentials", "true")
                 .end(Json.encodePrettily("Simulazione terminata"));
     }catch (Exception e) {
             e.printStackTrace();
@@ -137,17 +153,23 @@ public class Server extends AbstractVerticle {
         {
             routingContext.response()
                     .putHeader("content-type", "application/json; charset=utf-8")
+                    .putHeader("Access-Control-Allow-Origin", "*")
+                    .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                    .putHeader("Access-Control-Allow-Credentials", "true")
                     .end(this.engine.getLogger().getProducedSnapshots().toString());
         }
        else{
             routingContext.response()
                     .putHeader("content-type", "application/json; charset=utf-8")
+                    .putHeader("Access-Control-Allow-Origin", "*")
+                    .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                    .putHeader("Access-Control-Allow-Credentials", "true")
                     .end(Json.encodePrettily("L'engine non è in funzione"));
         }
 
 
     }
-    private void getScenario(RoutingContext routingContext) {
+    private void getOneScenarioFromRepository(RoutingContext routingContext) {
         String id = routingContext.request().getParam("id");
         if (id == null) {
             routingContext.response().setStatusCode(400).end();
@@ -158,9 +180,12 @@ public class Server extends AbstractVerticle {
             BasicDBObject query = new BasicDBObject();
             query.put("_id", new ObjectId(id));
             DBObject dbObject=collection.findOne(query);
-            dbObject.removeField("_id");
+           // dbObject.removeField("_id");
             routingContext.response()
                     .putHeader("content-type", "application/json; charset=utf-8")
+                    .putHeader("Access-Control-Allow-Origin", "*")
+                    .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                    .putHeader("Access-Control-Allow-Credentials", "true")
                     .setStatusCode(200).
                     end(dbObject.toString());
         }
@@ -181,6 +206,106 @@ public class Server extends AbstractVerticle {
 
     }
 
+    private void getScenariosFromRepository(RoutingContext routingContext){
+
+        DBCollection collection=db.getCollection("scenarios");
+
+
+        DBCursor dbCursor=collection.find();
+        JSONArray jsonArrayOfScenarios=new JSONArray();
+
+        for(DBObject dbO: dbCursor){
+/*
+            JSONObject jsonObjectOfScenario=new JSONObject(dbO.toString());
+            jsonArrayOfScenarios.put(jsonObjectOfScenario);
+         */
+            JSONObject joOfDBObject=new JSONObject(dbO.toString());
+
+            JSONObject joWithIdAndNameOfScenario=new JSONObject();
+
+            JSONObject jsonObjectOf_id=(JSONObject) joOfDBObject.get("_id");
+            String valueOfId=jsonObjectOf_id.get("$oid").toString();
+
+            JSONObject jsonObjectOfScenario=(JSONObject) joOfDBObject.get("scenario");
+            String sceName=jsonObjectOfScenario.get("sceName").toString();
+
+
+                    joWithIdAndNameOfScenario.put("id",valueOfId);
+                    joWithIdAndNameOfScenario.put("sceName", sceName);
+
+                    jsonArrayOfScenarios.put(joWithIdAndNameOfScenario);
+        }
+
+
+        routingContext.response()
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .putHeader("Access-Control-Allow-Origin", "*")
+                .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                .putHeader("Access-Control-Allow-Credentials", "true")
+                .setStatusCode(200).
+                end(jsonArrayOfScenarios.toString());
+        System.out.println("arrivata");
+                //end(new JSONObject().put("scenarios", jsonArrayOfScenarios).toString());
+       // end(new JSONObject().put("scenarios", jsonArrayOfScenarios).toString());
+    }
+
+
+    private void createScenarioInRepository (RoutingContext routingContext) {
+
+        try{
+            JSONObject jsonObjectOfScenario=new JSONObject(routingContext.getBodyAsString());
+            DBObject dbObject = (DBObject) JSON
+                    .parse(jsonObjectOfScenario.toString());
+
+            DBCollection collection=db.getCollection("scenarios");
+            collection.insert(dbObject);
+
+        routingContext.response()
+                .setStatusCode(200)
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .putHeader("Access-Control-Allow-Origin", "*")
+                .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                .putHeader("Access-Control-Allow-Credentials", "true")
+                .end();
+    }catch (Exception e) {
+        e.printStackTrace();
+            routingContext.response()
+                    .setStatusCode(404)
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .putHeader("Access-Control-Allow-Origin", "*")
+                    .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                    .putHeader("Access-Control-Allow-Credentials", "true")
+                    .end();
+    }
+
+    }
+
+
+    private void deleteScenarioInRepository(RoutingContext routingContext)
+    {
+
+        String id = routingContext.request().getParam("id");
+        if (id == null) {
+            routingContext.response().setStatusCode(400).end();
+        }
+        else{
+            DBCollection collection=db.getCollection("scenarios");
+
+            BasicDBObject query = new BasicDBObject();
+            query.put("_id", new ObjectId(id));
+
+            collection.remove(query);
+            routingContext.response()
+                    .putHeader("content-type", "application/json; charset=utf-8")
+                    .putHeader("Access-Control-Allow-Origin", "*")
+                    .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                    .putHeader("Access-Control-Allow-Credentials", "true")
+                    .setStatusCode(200).
+                    end(new JSONObject().put("result", "deleted").toString());
+        }
+
+
+    }
 
 
 
