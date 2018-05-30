@@ -14,9 +14,9 @@ public class SnapshotModel {
 
     public SnapshotModel(String modelName, String cat, Float probability) {
         this.id = COUNTER.getAndIncrement();
-        this.modelName=modelName;
+        this.modelName = modelName;
         this.cat = cat;
-        this.probability=probability;
+        this.probability = probability;
     }
 
     public void addMeasureType(MeasureType measureType) {
@@ -35,15 +35,13 @@ public class SnapshotModel {
         this.probability = probability;
     }
 
-    public int getId()
-    {
+    public int getId() {
         return this.id;
     }
 
 
-    public String getModelName()
-    {
-       return this.modelName;
+    public String getModelName() {
+        return this.modelName;
     }
 
     public String getCategory() {

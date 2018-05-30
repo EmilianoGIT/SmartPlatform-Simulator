@@ -14,9 +14,9 @@ public class Scenario {
 
     public Scenario(String scenName, Sensor sensor) {
 
-        this.sceName=scenName;
-        try{
-            if(sensor.getSumOfProbability()!=100)
+        this.sceName = scenName;
+        try {
+            if (sensor.getSumOfProbability() != 100)
                 throw new ErrorProbability();
             this.sensors.add(sensor);
         } catch (ErrorProbability errorProbability) {
@@ -27,8 +27,8 @@ public class Scenario {
 
     public void addSensor(Sensor sensor) {
 
-        try{
-            if(sensor.getSumOfProbability()!=100)
+        try {
+            if (sensor.getSumOfProbability() != 100)
                 throw new ErrorProbability();
 
             for (Sensor s : this.sensors) {
@@ -47,9 +47,9 @@ public class Scenario {
     }
 
 
-
-    public String getScenName()
-    {return this.sceName;}
+    public String getScenName() {
+        return this.sceName;
+    }
 
     public Set<Sensor> getSensors() {
         return this.sensors;

@@ -19,13 +19,14 @@ public class Sensor extends AbstractVerticle {
     long polling;
     String topic;
     HashMap<Integer, SnapshotModel> snapshotModels = new HashMap<Integer, SnapshotModel>();
+    Logger logger;
 
-    Sensor(String senName, String ref, String type, long polling,String topic)       //pollingTime expressed in milliseconds
+    Sensor(String senName, String ref, String type, long polling, String topic)       //pollingTime expressed in milliseconds
     {
         this.ref = ref;
         this.type = type;
-        this.polling = polling*1000;
-        this.topic=topic;
+        this.polling = polling * 1000;
+        this.topic = topic;
     }
 
 
@@ -39,9 +40,9 @@ public class Sensor extends AbstractVerticle {
             @Override
             public void handle(Long aLong) {
 
-                JSONObject jo=genSnapshot();
-                vertx.eventBus().send("snapshot-for-logger", jo.toString());
-                vertx.eventBus().send("snapshot-for-mqtt-sender", getTopic()+"tsDelimiter"+jo.toString());
+                JSONObject jo = genSnapshot();
+                vertx.eventBus().send(getLogger().deploymentID(), jo.toString());
+                vertx.eventBus().send("snapshot-for-mqtt-sender", getTopic() + "tsDelimiter" + jo.toString());
 
             }
         });
@@ -58,10 +59,13 @@ public class Sensor extends AbstractVerticle {
         this.ref = ref;
     }
 
-    public void setPollingTime(long polling){
+    public void setPollingTime(long polling) {
         this.polling = polling;
     }
 
+    public void setLogger(Logger logger) {
+        this.logger = logger;
+    }
 
     public void addModel(SnapshotModel snapshotModel) {
 
@@ -73,8 +77,9 @@ public class Sensor extends AbstractVerticle {
 
     }
 
-    public String getSenName()
-    {return this.senName;}
+    public String getSenName() {
+        return this.senName;
+    }
 
     public String getRef() {
         return this.ref;
@@ -92,6 +97,10 @@ public class Sensor extends AbstractVerticle {
         return this.topic;
     }
 
+    public Logger getLogger() {
+        return this.logger;
+    }
+
     public Float getSumOfProbability() {
 
         Float sumOfProb = 0.0f;
@@ -107,7 +116,6 @@ public class Sensor extends AbstractVerticle {
     public HashMap<Integer, SnapshotModel> getSnapshotModels() {
         return this.snapshotModels;
     }
-
 
 
     public JSONObject genSnapshot() {
@@ -145,22 +153,21 @@ public class Sensor extends AbstractVerticle {
                 JSONObject objectOfMeasure = new JSONObject();
 
 
-                float vMin = Float.parseFloat(measureTypeEntry.getValue().getMinRange());
-                float vMax = Float.parseFloat(measureTypeEntry.getValue().getMaxRange());
+                double vMin = Float.parseFloat(measureTypeEntry.getValue().getMinRange());
+                double vMax = Float.parseFloat(measureTypeEntry.getValue().getMaxRange());
 
-                Float value = (float) (Math.random() * (vMax - vMin)) + vMin;
+                Double value = (double) (Math.random() * (vMax - vMin)) + vMin;
 
 
                 objectOfMeasure.put("k", measureTypeEntry.getValue().getKey());
                 objectOfMeasure.put("u", measureTypeEntry.getValue().getUnity());
-                objectOfMeasure.put("v", toString().valueOf(value));
+                objectOfMeasure.put("v", value);
                 objectOfMeasure.put("t", timeZoneObjectOfMeasure.getMillis());
                 objectOfMeasure.put("tz", timeZoneObjectOfMeasure);
                 objectOfMeasure.put("s", measureTypeEntry.getValue().getSource());
                 objectOfMeasure.put("d", measureTypeEntry.getValue().getDestination());
-
-                //objectOfMeasure.put("l", measureTypeEntry.getValue().getVariance());
-                //objectOfMeasure.put("p", measureTypeEntry.getValue().getProbability());
+                objectOfMeasure.put("l", measureTypeEntry.getValue().getVariance());
+                objectOfMeasure.put("p", measureTypeEntry.getValue().getProbability());
 
                 if (measureTypeEntry.getValue().getWhichType() == 'm') {
                     m.put(objectOfMeasure);
@@ -173,8 +180,6 @@ public class Sensor extends AbstractVerticle {
         return snapshot;
 
     }
-
-
 
 
     public static String randomAlphaNumeric(int length, String availableChars) {

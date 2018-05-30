@@ -13,22 +13,22 @@ public class MeasureType {
     String maxRange;
     String source;
     String destination;
-    double variance;
-    double probability;
+    Double variance;
+    Double probability;
     TypeOfArray whichArray;
 
-    public MeasureType(String measureTypeName,String key, String unity, String minRange, String maxRange, String source, String destination, double probability, double variance,TypeOfArray whichArray) {
+    public MeasureType(String measureTypeName, String key, String unity, String minRange, String maxRange, String source, String destination, Double probability, Double variance, TypeOfArray whichArray) {
 
         this.id = COUNTER.getAndIncrement();
-        this.measureTypeName=measureTypeName;
+        this.measureTypeName = measureTypeName;
         this.key = key;
         this.unity = unity;
         this.minRange = minRange;
         this.maxRange = maxRange;
-        this.source=source;
-        this.destination=destination;
-        this.probability=probability;
-        this.variance=variance;
+        this.source = source;
+        this.destination = destination;
+        this.probability = probability;
+        this.variance = variance;
         this.whichArray = whichArray;
     }
 
@@ -56,11 +56,11 @@ public class MeasureType {
         this.destination = destination;
     }
 
-    public void setVariance(Integer variance) {
+    public void setVariance(Double variance) {
         this.variance = variance;
     }
 
-    public void setProbability(Integer probability) {
+    public void setProbability(Double probability) {
         this.probability = probability;
     }
 
@@ -68,15 +68,14 @@ public class MeasureType {
         this.whichArray = whichArray;
     }
 
-    public int getId()
-    {
+    public int getId() {
         return this.id;
     }
 
-    public String getMeasureTypeName()
-    {
+    public String getMeasureTypeName() {
         return this.measureTypeName;
     }
+
     public String getKey() {
         return this.key;
     }
@@ -101,11 +100,11 @@ public class MeasureType {
         return this.destination;
     }
 
-    public double getVariance() {
+    public Double getVariance() {
         return this.variance;
     }
 
-    public double getProbability() {
+    public Double getProbability() {
         return this.probability;
     }
 

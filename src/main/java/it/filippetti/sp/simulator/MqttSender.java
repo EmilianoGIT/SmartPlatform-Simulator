@@ -13,10 +13,9 @@ public class MqttSender extends AbstractVerticle {
     String brokerMQTTAddress;
     int port;
 
-    public MqttSender(String brokerMQTTAddress,int port)
-    {
-        this.brokerMQTTAddress=brokerMQTTAddress;
-        this.port=port;
+    public MqttSender(String brokerMQTTAddress, int port) {
+        this.brokerMQTTAddress = brokerMQTTAddress;
+        this.port = port;
     }
 
 
@@ -26,8 +25,7 @@ public class MqttSender extends AbstractVerticle {
         MqttClientOptions options = new MqttClientOptions();
 
         MqttClient client = MqttClient.create(vertx, options);
-       // MqttClient client = MqttClient.create(vertx);
-        client.connect(this.port, this.brokerMQTTAddress, s -> {
+        client.connect(port, brokerMQTTAddress, s -> {
         });
 
 
@@ -41,9 +39,9 @@ public class MqttSender extends AbstractVerticle {
         vertx.eventBus().consumer("snapshot-for-mqtt-sender", message -> {
 
 
-            String[] splitted=message.body().toString().split("tsDelimiter");
-         //   System.out.println(splitted[0]);
-         //   System.out.println(splitted[1]);
+            String[] splitted = message.body().toString().split("tsDelimiter");
+            //   System.out.println(splitted[0]);
+            //   System.out.println(splitted[1]);
             //fai publish al Broker Mqtt
             client.publish(splitted[0],
                     Buffer.buffer(splitted[1]),

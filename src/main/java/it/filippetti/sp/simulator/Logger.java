@@ -11,16 +11,14 @@ public class Logger extends AbstractVerticle {
 
 
     JSONArray producedSnapshots = new JSONArray();
-    Engine engine;
 
-    public Logger(Engine engine) {
-        this.engine = engine;
+    public Logger() {
     }
 
     @Override
     public void start() throws Exception {
 
-        vertx.eventBus().consumer("snapshot-for-logger", message -> {
+        vertx.eventBus().consumer(this.deploymentID(), message -> {
             this.producedSnapshots.put(new JSONObject(message.body().toString()));
             System.out.println(message.body().toString());
         });
@@ -33,15 +31,12 @@ public class Logger extends AbstractVerticle {
     }
 
 
-
     public void clearProducedSnapshots() {
-        this.producedSnapshots=new JSONArray();
+        this.producedSnapshots = new JSONArray();
     }
 
-    public JSONObject getProducedSnapshots() {
-
-
-        return new JSONObject().put("snapshots", this.producedSnapshots);
+    public JSONArray getProducedSnapshots() {
+        return this.producedSnapshots;
     }
 
 }
