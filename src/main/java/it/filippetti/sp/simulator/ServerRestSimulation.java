@@ -62,12 +62,12 @@ public class ServerRestSimulation extends AbstractVerticle {
                 );
 
         router.route().handler(BodyHandler.create());
-        router.post("/api/simulator/new_simulation").handler(this::startSimulation);
-        router.get("/api/simulator/engines").handler(this::getAllEngines);
-        router.get("/api/simulator/engines/:id").handler(this::getOneEngine);
-        router.get("/api/simulator/engines/:id/stop_simulation").handler(this::stopSimulation);
-        router.delete("/api/simulator/engines/:id").handler(this::deleteEngine);
-        router.get("/api/simulator/engines/:id/snapshots").handler(this::getProducedSnapshots);
+        router.post("/api/v1.0/simulator/new_simulation").handler(this::startSimulation);
+        router.get("/api/v1.0/simulator/engines").handler(this::getAllEngines);
+        router.get("/api/v1.0/simulator/engines/:id").handler(this::getOneEngine);
+        router.get("/api/v1.0/simulator/engines/:id/stop_simulation").handler(this::stopSimulation);
+        router.delete("/api/v1.0/simulator/engines/:id").handler(this::deleteEngine);
+        router.get("/api/v1.0/simulator/engines/:id/snapshots").handler(this::getProducedSnapshots);
 
     }
 
@@ -91,7 +91,8 @@ public class ServerRestSimulation extends AbstractVerticle {
                     .putHeader("Access-Control-Allow-Origin", "*")
                     .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                     .putHeader("Access-Control-Allow-Credentials", "true")
-                    .end(new JSONObject().put("result", "Nice JSON").toString());
+                    .end(new JSONObject().put("result", "Nice JSON")
+                            .put("simulationId", engine.getId()).toString());
             System.out.println(routingContext.getBody().toString());
         } catch (Exception e) {
             e.printStackTrace();
