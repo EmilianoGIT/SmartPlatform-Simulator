@@ -7,12 +7,12 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CorsHandler;
 import it.filippetti.sp.simulator.model.MeasureType;
 import it.filippetti.sp.simulator.model.Scenario;
 import it.filippetti.sp.simulator.model.SnapshotModel;
 import it.filippetti.sp.simulator.model.TypeOfArray;
 import org.joda.time.DateTime;
-import org.joda.time.Seconds;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -37,6 +37,18 @@ public class ServerRestSimulation extends AbstractVerticle {
     public void start(Future<Void> fut) throws InterruptedException {
 
         Router router = Router.router(vertx);
+
+        router.route().handler(CorsHandler.create("*")
+                .allowedMethod(io.vertx.core.http.HttpMethod.GET)
+                .allowedMethod(io.vertx.core.http.HttpMethod.POST)
+                .allowedMethod(io.vertx.core.http.HttpMethod.DELETE)
+                .allowedMethod(io.vertx.core.http.HttpMethod.PUT)
+                .allowedMethod(io.vertx.core.http.HttpMethod.OPTIONS)
+                .allowedHeader("Access-Control-Allow-Method")
+                .allowedHeader("Access-Control-Allow-Origin")
+                .allowedHeader("Access-Control-Allow-Credentials")
+                .allowedHeader("Content-Type"));
+
         router.route("/").handler(routingContext -> {
             HttpServerResponse response = routingContext.response();
             response
@@ -62,12 +74,14 @@ public class ServerRestSimulation extends AbstractVerticle {
                 );
 
         router.route().handler(BodyHandler.create());
-        router.post("/api/v1.0/simulator/new_simulation").handler(this::startSimulation);
-        router.get("/api/v1.0/simulator/engines").handler(this::getAllEngines);
-        router.get("/api/v1.0/simulator/engines/:id").handler(this::getOneEngine);
-        router.get("/api/v1.0/simulator/engines/:id/stop_simulation").handler(this::stopSimulation);
-        router.delete("/api/v1.0/simulator/engines/:id").handler(this::deleteEngine);
-        router.get("/api/v1.0/simulator/engines/:id/snapshots").handler(this::getProducedSnapshots);
+        router.post("/api/v1.0/simulator/new_simulation").handler(this::newSimulation);
+        router.get("/api/v1.0/simulator/simulations/:id/play").handler(this::playSimulation);
+        router.get("/api/v1.0/simulator/simulations/:id/stop").handler(this::stopSimulation);
+        router.get("/api/v1.0/simulator/simulations/:id/pause").handler(this::pauseSimulation);
+        router.delete("/api/v1.0/simulator/simulations/:id").handler(this::deleteEngine);
+        router.get("/api/v1.0/simulator/simulations").handler(this::getAllEngines);
+        router.get("/api/v1.0/simulator/simulations/:id").handler(this::getOneEngine);
+        router.get("/api/v1.0/simulator/simulations/:id/snapshots").handler(this::getProducedSnapshots);
 
     }
 
@@ -77,7 +91,7 @@ public class ServerRestSimulation extends AbstractVerticle {
     }
 
 
-    private void startSimulation(RoutingContext routingContext) {
+    private void newSimulation(RoutingContext routingContext) {
 
         try {
 
@@ -108,69 +122,132 @@ public class ServerRestSimulation extends AbstractVerticle {
     }
 
 
-    private void stopSimulation(RoutingContext routingContext) {
 
-        try {
+    private void playSimulation(RoutingContext routingContext) {
 
-            String id = routingContext.request().getParam("id");
-            if (id == null) {
-                routingContext.response().setStatusCode(400)
-                        .putHeader("content-type", "application/json; charset=utf-8")
-                        .putHeader("Access-Control-Allow-Origin", "*")
-                        .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                        .putHeader("Access-Control-Allow-Credentials", "true")
-                        .end();
-            } else {
-                Integer idAsInteger = Integer.valueOf(id);
-                if (engines.get(idAsInteger) == null)
-                    routingContext.response().setStatusCode(404).end();
-
-                else vertx.undeploy(engines.get(idAsInteger).deploymentID());
-            }
-            routingContext.response().setStatusCode(204)
-                    .putHeader("content-type", "application/json; charset=utf-8")
-                    .putHeader("Access-Control-Allow-Origin", "*")
-                    .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                    .putHeader("Access-Control-Allow-Credentials", "true")
+        routingContext.response()
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .putHeader("Access-Control-Allow-Origin", "*")
+                .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                .putHeader("Access-Control-Allow-Credentials", "true");
+        String id = routingContext.request().getParam("id");
+        if (id == null) {
+            routingContext.response()
+                    .setStatusCode(400)
                     .end();
+        } else {
 
-        } catch (Exception e) {
-            e.printStackTrace();
+            Integer idAsInteger = Integer.valueOf(id);
+            if (engines.get(idAsInteger) == null){
+                routingContext.response()
+                        .setStatusCode(404)
+                        .end();
+            }
+            else{
+                vertx.eventBus().send("commands"+idAsInteger,"play");
+                routingContext.response()
+                        .setStatusCode(200).
+                        end();
+            }
+
+        }
+    }
+
+    private void pauseSimulation(RoutingContext routingContext) {
+
+        routingContext.response()
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .putHeader("Access-Control-Allow-Origin", "*")
+                .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                .putHeader("Access-Control-Allow-Credentials", "true");
+        String id = routingContext.request().getParam("id");
+        if (id == null) {
+            routingContext.response()
+                    .setStatusCode(400)
+                    .end();
+        } else {
+
+            Integer idAsInteger = Integer.valueOf(id);
+            if (engines.get(idAsInteger) == null){
+                routingContext.response()
+                        .setStatusCode(404)
+                        .end();
+            }
+            else{
+                vertx.eventBus().send("commands"+idAsInteger,"pause");
+                routingContext.response()
+                        .setStatusCode(200).
+                        end();
+            }
+
         }
     }
 
 
+    private void stopSimulation(RoutingContext routingContext) {
+
+        routingContext.response()
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .putHeader("Access-Control-Allow-Origin", "*")
+                .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                .putHeader("Access-Control-Allow-Credentials", "true");
+        String id = routingContext.request().getParam("id");
+        if (id == null) {
+            routingContext.response()
+                    .setStatusCode(400)
+                    .end();
+        } else {
+
+            Integer idAsInteger = Integer.valueOf(id);
+            if (engines.get(idAsInteger) == null){
+                routingContext.response()
+                        .setStatusCode(404)
+                        .end();
+            }
+            else{
+                vertx.eventBus().send("commands"+idAsInteger,"stop");
+                routingContext.response()
+                        .setStatusCode(200).
+                        end();
+            }
+
+        }
+    }
+
+
+
     private void deleteEngine(RoutingContext routingContext) {
 
-        try {
-
-            String id = routingContext.request().getParam("id");
-            if (id == null) {
-                routingContext.response().setStatusCode(400)
-                        .putHeader("content-type", "application/json; charset=utf-8")
-                        .putHeader("Access-Control-Allow-Origin", "*")
-                        .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                        .putHeader("Access-Control-Allow-Credentials", "true")
-                        .end();
-            } else {
-                Integer idAsInteger = Integer.valueOf(id);
-                if (engines.get(idAsInteger) == null)
-                    routingContext.response().setStatusCode(404).end();
-                else {
-                    vertx.undeploy(engines.get(idAsInteger).deploymentID());
-                    engines.remove(idAsInteger);
-                }
-
-            }
-            routingContext.response().setStatusCode(204)
-                    .putHeader("content-type", "application/json; charset=utf-8")
-                    .putHeader("Access-Control-Allow-Origin", "*")
-                    .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                    .putHeader("Access-Control-Allow-Credentials", "true")
+        routingContext.response()
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .putHeader("Access-Control-Allow-Origin", "*")
+                .putHeader("Access-Control-Allow-Methods","GET, POST, OPTIONS")
+                .putHeader("Access-Control-Allow-Credentials", "true");
+        String id = routingContext.request().getParam("id");
+        if (id == null) {
+            routingContext.response()
+                    .setStatusCode(400)
                     .end();
+        } else {
 
-        } catch (Exception e) {
-            e.printStackTrace();
+            Integer idAsInteger = Integer.valueOf(id);
+            if (engines.get(idAsInteger) == null){
+                routingContext.response()
+                        .setStatusCode(404)
+                        .end();
+            }
+            else{
+
+                vertx.undeploy( engines.get(idAsInteger).getLogger().deploymentID());     //fermo il logger
+                for (Sensor s : engines.get(idAsInteger).getScenario().getSensors()) {        //fermo i sensori
+                    vertx.undeploy(s.deploymentID());
+                }
+                engines.remove(idAsInteger);
+                routingContext.response()
+                        .setStatusCode(200).
+                        end();
+            }
+
         }
     }
 
@@ -185,7 +262,8 @@ public class ServerRestSimulation extends AbstractVerticle {
             jsonObjectOfEngine.put("id", entry.getKey());
             jsonObjectOfEngine.put("simulationStartDate", entry.getValue().getSimulationStartDate().toString());
             jsonObjectOfEngine.put("simulationEndDate", entry.getValue().getSimulationEndDate().toString());
-            jsonObjectOfEngine.put("progressionPercentage", entry.getValue().getProgressionPercentage());
+            jsonObjectOfEngine.put("progressionPercentage", entry.getValue().getProgressOfSimulation());
+            jsonObjectOfEngine.put("currentState", entry.getValue().getCurrentState());
 
             jsonArrayOfEngines.put(jsonObjectOfEngine);
 
@@ -214,7 +292,7 @@ public class ServerRestSimulation extends AbstractVerticle {
                 jsonObjectOfEngine.put("id", engines.get(idAsInteger).getId());
                 jsonObjectOfEngine.put("simulationStartDate", engines.get(idAsInteger).getSimulationStartDate().toString());
                 jsonObjectOfEngine.put("simulationEndDate", engines.get(idAsInteger).getSimulationEndDate().toString());
-                jsonObjectOfEngine.put("progressionPercentage", engines.get(idAsInteger).getProgressionPercentage());
+                jsonObjectOfEngine.put("progressionPercentage", engines.get(idAsInteger).getProgressOfSimulation());
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=utf-8")
                         .putHeader("Access-Control-Allow-Origin", "*")
@@ -282,7 +360,6 @@ public class ServerRestSimulation extends AbstractVerticle {
                 int hoursInMillis = numberOfHoursInInt * 3600000;
                 int minutesInMillis = numberOfMinutesInInt * 60000;
                 int secondsInMillis = numberOfSecondsInInt * 1000;
-
 
                 periodOfTimeOfSimulation = hoursInMillis + minutesInMillis + secondsInMillis;
             } else throw new Exception();

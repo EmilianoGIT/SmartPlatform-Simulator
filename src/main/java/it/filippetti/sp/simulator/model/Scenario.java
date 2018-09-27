@@ -46,7 +46,6 @@ public class Scenario {
 
     }
 
-
     public String getScenName() {
         return this.sceName;
     }
