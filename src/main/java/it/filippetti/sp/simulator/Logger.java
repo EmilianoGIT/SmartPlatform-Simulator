@@ -9,7 +9,6 @@ import java.util.List;
 
 public class Logger extends AbstractVerticle {
 
-
     JSONArray producedSnapshots = new JSONArray();
 
     public Logger() {
@@ -20,7 +19,8 @@ public class Logger extends AbstractVerticle {
 
         vertx.eventBus().consumer(this.deploymentID(), message -> {
             this.producedSnapshots.put(new JSONObject(message.body().toString()));
-            System.out.println(message.body().toString());
+            System.out.println(producedSnapshots.toString());
+
         });
 
     }

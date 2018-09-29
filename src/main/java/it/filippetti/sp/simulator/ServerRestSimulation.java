@@ -260,10 +260,11 @@ public class ServerRestSimulation extends AbstractVerticle {
             JSONObject jsonObjectOfEngine = new JSONObject();
 
             jsonObjectOfEngine.put("id", entry.getKey());
-            jsonObjectOfEngine.put("simulationStartDate", entry.getValue().getSimulationStartDate().toString());
-            jsonObjectOfEngine.put("simulationEndDate", entry.getValue().getSimulationEndDate().toString());
+            jsonObjectOfEngine.put("startDate", entry.getValue().getSimulationStartDate().toString());
+            jsonObjectOfEngine.put("endDate", entry.getValue().getSimulationEndDate().toString());
             jsonObjectOfEngine.put("progressionPercentage", entry.getValue().getProgressOfSimulation());
             jsonObjectOfEngine.put("currentState", entry.getValue().getCurrentState());
+            jsonObjectOfEngine.put("sceName", entry.getValue().getScenario().getScenName());
 
             jsonArrayOfEngines.put(jsonObjectOfEngine);
 
@@ -290,9 +291,11 @@ public class ServerRestSimulation extends AbstractVerticle {
             } else {
                 JSONObject jsonObjectOfEngine=new JSONObject();
                 jsonObjectOfEngine.put("id", engines.get(idAsInteger).getId());
-                jsonObjectOfEngine.put("simulationStartDate", engines.get(idAsInteger).getSimulationStartDate().toString());
-                jsonObjectOfEngine.put("simulationEndDate", engines.get(idAsInteger).getSimulationEndDate().toString());
+                jsonObjectOfEngine.put("startDate", engines.get(idAsInteger).getSimulationStartDate().toString());
+                jsonObjectOfEngine.put("endDate", engines.get(idAsInteger).getSimulationEndDate().toString());
                 jsonObjectOfEngine.put("progressionPercentage", engines.get(idAsInteger).getProgressOfSimulation());
+                jsonObjectOfEngine.put("currentState", engines.get(idAsInteger).getCurrentState());
+                jsonObjectOfEngine.put("sceName", engines.get(idAsInteger).getScenario().getScenName());
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=utf-8")
                         .putHeader("Access-Control-Allow-Origin", "*")
@@ -350,6 +353,7 @@ public class ServerRestSimulation extends AbstractVerticle {
             String regexTimer = "[0-9][0-9]:[0-5][0-9]:[0-5][0-9]";
             Pattern pattern = Pattern.compile(regexTimer);
             String simDuration = jsonOfSimulation.get("simDuration").toString();
+            if (simDuration.equals("00:00:00")) throw new Exception();
             Matcher matcher = pattern.matcher(simDuration);
 
             if (matcher.find()) {

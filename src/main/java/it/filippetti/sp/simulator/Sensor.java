@@ -40,9 +40,15 @@ public class Sensor extends AbstractVerticle {
             @Override
             public void handle(Long aLong) {
 
-                JSONObject jo = genSnapshot();
-                vertx.eventBus().send(getLogger().deploymentID(), jo.toString());
-                vertx.eventBus().send("snapshot-for-mqtt-sender", getTopic() + "tsDelimiter" + jo.toString());
+                JSONObject snapshot = genSnapshot();
+
+                JSONObject jsonObjectToSend =new JSONObject().
+                        put("topic", getTopic()).
+                        put("snapshot", snapshot);
+                vertx.eventBus().send("snapshot-for-mqtt-sender", jsonObjectToSend.toString());
+
+                jsonObjectToSend.put("dateTime", snapshot.get("tz"));
+                vertx.eventBus().send(getLogger().deploymentID(), jsonObjectToSend.toString());
 
             }
         });

@@ -7,6 +7,7 @@ import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mqtt.MqttClient;
 import io.vertx.mqtt.MqttClientOptions;
+import org.json.JSONObject;
 
 public class MqttSender extends AbstractVerticle {
 
@@ -54,13 +55,19 @@ public class MqttSender extends AbstractVerticle {
         */
         vertx.eventBus().consumer("snapshot-for-mqtt-sender", message -> {
 
+            JSONObject jsonObjectForBroker= new JSONObject(message.body().toString());
+
+            String topic=jsonObjectForBroker.get("topic").toString();
+            String snapshot=jsonObjectForBroker.getJSONObject("snapshot").toString();
 
             String[] splitted = message.body().toString().split("tsDelimiter");
             //   System.out.println(splitted[0]);
             //   System.out.println(splitted[1]);
             //fai publish al Broker Mqtt
-            client.publish(splitted[0],
-                    Buffer.buffer(splitted[1]),
+
+
+            client.publish(topic,
+                    Buffer.buffer(snapshot),
                     MqttQoS.AT_LEAST_ONCE,
                     false,
                     false);
