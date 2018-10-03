@@ -13,9 +13,13 @@ import it.filippetti.sp.simulator.model.Scenario;
 import it.filippetti.sp.simulator.model.SnapshotModel;
 import it.filippetti.sp.simulator.model.TypeOfArray;
 import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.beans.SimpleBeanInfo;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -217,7 +221,7 @@ public class ServerRestSimulation extends AbstractVerticle {
 
 
     private void deleteEngine(RoutingContext routingContext) {
-
+/*
         routingContext.response()
                 .putHeader("content-type", "application/json; charset=utf-8")
                 .putHeader("Access-Control-Allow-Origin", "*")
@@ -249,6 +253,25 @@ public class ServerRestSimulation extends AbstractVerticle {
             }
 
         }
+*/
+        routingContext.response()
+              //  .putHeader("content-type", "application/json; charset=utf-8")
+                .putHeader("Access-Control-Allow-Origin", "*")
+                .putHeader("Access-Control-Allow-Methods","GET, POST, DELETE, OPTIONS")
+                .putHeader("Access-Control-Allow-Credentials", "true");
+        String id = routingContext.request().getParam("id");
+        if (id == null) {
+            routingContext.response().setStatusCode(400).end();
+        } else {
+            Integer idAsInteger = Integer.valueOf(id);
+
+
+            vertx.undeploy( engines.get(idAsInteger).getLogger().deploymentID());     //fermo il logger
+            vertx.eventBus().send("commands"+idAsInteger,"stop");
+            engines.remove(idAsInteger);
+        }
+        routingContext.response().setStatusCode(204).end();
+
     }
 
     private void getAllEngines(RoutingContext routingContext) {
@@ -260,8 +283,10 @@ public class ServerRestSimulation extends AbstractVerticle {
             JSONObject jsonObjectOfEngine = new JSONObject();
 
             jsonObjectOfEngine.put("id", entry.getKey());
-            jsonObjectOfEngine.put("startDate", entry.getValue().getSimulationStartDate().toString());
-            jsonObjectOfEngine.put("endDate", entry.getValue().getSimulationEndDate().toString());
+            jsonObjectOfEngine.put("startDate", getFixedDateTime(entry.getValue().getSimulationStartDate()));
+            if(entry.getValue().getCurrentState().equals("Paused"))
+                jsonObjectOfEngine.put("endDate", "--/--/---- --:--:--");
+            else jsonObjectOfEngine.put("endDate", getFixedDateTime(entry.getValue().getSimulationEndDate()));
             jsonObjectOfEngine.put("progressionPercentage", entry.getValue().getProgressOfSimulation());
             jsonObjectOfEngine.put("currentState", entry.getValue().getCurrentState());
             jsonObjectOfEngine.put("sceName", entry.getValue().getScenario().getScenName());
@@ -291,8 +316,8 @@ public class ServerRestSimulation extends AbstractVerticle {
             } else {
                 JSONObject jsonObjectOfEngine=new JSONObject();
                 jsonObjectOfEngine.put("id", engines.get(idAsInteger).getId());
-                jsonObjectOfEngine.put("startDate", engines.get(idAsInteger).getSimulationStartDate().toString());
-                jsonObjectOfEngine.put("endDate", engines.get(idAsInteger).getSimulationEndDate().toString());
+                jsonObjectOfEngine.put("startDate", getFixedDateTime(engines.get(idAsInteger).getSimulationStartDate()));
+                jsonObjectOfEngine.put("endDate", getFixedDateTime(engines.get(idAsInteger).getSimulationEndDate()));
                 jsonObjectOfEngine.put("progressionPercentage", engines.get(idAsInteger).getProgressOfSimulation());
                 jsonObjectOfEngine.put("currentState", engines.get(idAsInteger).getCurrentState());
                 jsonObjectOfEngine.put("sceName", engines.get(idAsInteger).getScenario().getScenName());
@@ -350,7 +375,7 @@ public class ServerRestSimulation extends AbstractVerticle {
                 ssd = DateTime.now();
             else ssd = DateTime.parse(jsonOfSimulation.get("simStartDate").toString());
 
-            String regexTimer = "[0-9][0-9]:[0-5][0-9]:[0-5][0-9]";
+            String regexTimer = "[0-9][0-9]:[0-5][0-9]:[0-5][0-9]|[0-9][0-9]:[0-5][0-9]";
             Pattern pattern = Pattern.compile(regexTimer);
             String simDuration = jsonOfSimulation.get("simDuration").toString();
             if (simDuration.equals("00:00:00")) throw new Exception();
@@ -359,7 +384,12 @@ public class ServerRestSimulation extends AbstractVerticle {
             if (matcher.find()) {
                 int numberOfHoursInInt = (Character.getNumericValue(simDuration.charAt(0)) * 10) + (Character.getNumericValue(simDuration.charAt(1)));
                 int numberOfMinutesInInt = (Character.getNumericValue(simDuration.charAt(3)) * 10) + (Character.getNumericValue(simDuration.charAt(4)));
-                int numberOfSecondsInInt = (Character.getNumericValue(simDuration.charAt(6)) * 10) + (Character.getNumericValue(simDuration.charAt(7)));
+                int numberOfSecondsInInt;
+                if(simDuration.length()==8){
+                   numberOfSecondsInInt = (Character.getNumericValue(simDuration.charAt(6)) * 10) + (Character.getNumericValue(simDuration.charAt(7)));
+               }
+               else numberOfSecondsInInt=0;
+
 
                 int hoursInMillis = numberOfHoursInInt * 3600000;
                 int minutesInMillis = numberOfMinutesInInt * 60000;
@@ -473,5 +503,11 @@ public class ServerRestSimulation extends AbstractVerticle {
         }
     }
 
+    public String getFixedDateTime(DateTime dateTime)
+    {
+        DateTimeFormatter fmt = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss");
+        String fixedDateTime = fmt.print(dateTime);
+        return fixedDateTime;
+    }
 
 }

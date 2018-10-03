@@ -12,6 +12,8 @@ public class Logger extends AbstractVerticle {
     JSONArray producedSnapshots = new JSONArray();
 
     public Logger() {
+
+
     }
 
     @Override
