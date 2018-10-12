@@ -4,12 +4,10 @@ import io.vertx.core.AbstractVerticle;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public class Logger extends AbstractVerticle {
 
     JSONArray producedSnapshots = new JSONArray();
+    int limitOfKeptSnapshots = 10;
 
     public Logger() {
 
@@ -20,9 +18,15 @@ public class Logger extends AbstractVerticle {
     public void start() throws Exception {
 
         vertx.eventBus().consumer(this.deploymentID(), message -> {
-            this.producedSnapshots.put(new JSONObject(message.body().toString()));
-            System.out.println(producedSnapshots.toString());
 
+            int i;
+            for(i=producedSnapshots.length()-limitOfKeptSnapshots; i>-1; i--)
+            {
+                producedSnapshots.remove(i);
+            }
+                System.out.println(producedSnapshots.toString());
+            this.producedSnapshots.put(new JSONObject(message.body().toString()));
+            System.out.println(getProducedSnapshots().toString());
         });
 
     }
@@ -40,5 +44,6 @@ public class Logger extends AbstractVerticle {
     public JSONArray getProducedSnapshots() {
         return this.producedSnapshots;
     }
+
 
 }

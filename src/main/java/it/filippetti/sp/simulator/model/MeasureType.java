@@ -1,5 +1,8 @@
 package it.filippetti.sp.simulator.model;
 
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class MeasureType {
@@ -9,15 +12,18 @@ public class MeasureType {
     String measureTypeName;
     String key;
     String unity;
-    String minRange;
-    String maxRange;
+    Double minRange;
+    Double maxRange;
     String source;
     String destination;
     Double variance;
     Double probability;
     TypeOfArray whichArray;
+    Behavior behavior = null;
+    List<TriadOfValueProbabilityVariance> triadOfValueProbabilityVariances = null;
+    int currentIndexOfTriad=0;
 
-    public MeasureType(String measureTypeName, String key, String unity, String minRange, String maxRange, String source, String destination, Double probability, Double variance, TypeOfArray whichArray) {
+    public MeasureType(String measureTypeName, String key, String unity, Double minRange, Double maxRange, String source, String destination, Double probability, Double variance, TypeOfArray whichArray) { //costruttore per misura con value dipendente da range
 
         this.id = COUNTER.getAndIncrement();
         this.measureTypeName = measureTypeName;
@@ -30,6 +36,36 @@ public class MeasureType {
         this.probability = probability;
         this.variance = variance;
         this.whichArray = whichArray;
+
+    }
+
+    public MeasureType(String measureTypeName, String key, String unity, Double minRange, Double maxRange, String source, String destination, Double probability, Double variance, TypeOfArray whichArray, Behavior behavior) { ////costruttore per misura con value dipendente da range e andamento
+
+        this.id = COUNTER.getAndIncrement();
+        this.measureTypeName = measureTypeName;
+        this.key = key;
+        this.unity = unity;
+        this.minRange = minRange;
+        this.maxRange = maxRange;
+        this.source = source;
+        this.destination = destination;
+        this.probability = probability;
+        this.variance = variance;
+        this.whichArray = whichArray;
+        this.behavior = behavior;
+
+    }
+
+    public MeasureType(String measureTypeName, String key, String unity, String source, String destination, TypeOfArray whichArray, List<TriadOfValueProbabilityVariance> triadOfValueProbabilityVariances) { //costruttore per misura con value, probability e variance predefiniti
+
+        this.id = COUNTER.getAndIncrement();
+        this.measureTypeName = measureTypeName;
+        this.key = key;
+        this.unity = unity;
+        this.source = source;
+        this.destination = destination;
+        this.whichArray = whichArray;
+        this.triadOfValueProbabilityVariances = triadOfValueProbabilityVariances;
     }
 
     public void setKey(String key) {
@@ -40,11 +76,11 @@ public class MeasureType {
         this.unity = unity;
     }
 
-    public void setMinRange(String minRange) {
+    public void setMinRange(Double minRange) {
         this.minRange = minRange;
     }
 
-    public void setMaxRange(String maxRange) {
+    public void setMaxRange(Double maxRange) {
         this.maxRange = maxRange;
     }
 
@@ -84,11 +120,11 @@ public class MeasureType {
         return this.unity;
     }
 
-    public String getMinRange() {
+    public Double getMinRange() {
         return this.minRange;
     }
 
-    public String getMaxRange() {
+    public Double getMaxRange() {
         return this.maxRange;
     }
 
@@ -112,5 +148,26 @@ public class MeasureType {
         return this.whichArray.getValue();
     }
 
+    public Behavior getBehavior() {
+        return this.behavior;
+    }
+
+    public List<TriadOfValueProbabilityVariance> getListOfTriadOfValueProbabilityVariances()
+    {
+        return this.triadOfValueProbabilityVariances;
+    }
+
+
+    public TriadOfValueProbabilityVariance getCurrentTriad()
+    {
+      return this.triadOfValueProbabilityVariances.get(this.currentIndexOfTriad);
+    }
+
+    public void computeNextTriad()
+    {
+        if(this.currentIndexOfTriad+1==this.triadOfValueProbabilityVariances.size())
+            this.currentIndexOfTriad=0;
+        else this.currentIndexOfTriad++;
+    }
 
 }

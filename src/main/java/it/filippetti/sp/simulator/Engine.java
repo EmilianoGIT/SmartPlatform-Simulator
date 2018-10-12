@@ -19,10 +19,10 @@ public class Engine extends AbstractVerticle {
     private DateTime simulationStartDate;        //data di inizio simulazione
     private DateTime simulationEndDate;          //data di fine simulazione
     private int periodOfTimeOfSimulation;         //durata della simulazione espressa in secondi
-    private String currentState="";     // WaitingToStart, Running, Paused, Ended
+    private String currentState="";     // WaitingToStart, Running, Paused, Stopped, Ended
     private float progressOfSimulation=0.0f; //in percentuale
     private long timerIDForProgressCalculation;
-    private long timerIDForRemainingTime;
+    private long timerIDForEndOfSimulation;
     private long timerIDForCountdown;
     private long timerIDForSimulationToStart;
     private long passedTime=0;  //tempo trascorso della simulazione
@@ -41,7 +41,9 @@ public class Engine extends AbstractVerticle {
 
         for (Sensor s : scenario.getSensors()) {
             s.setLogger(getLogger());
+            s.setEngine(this);
         }
+
 
         if (simulationStartDate.isBeforeNow())
         {
@@ -51,10 +53,7 @@ public class Engine extends AbstractVerticle {
             simulationEndDate=simulationStartDate.plus(periodOfTimeOfSimulation);
             System.out.println("La simulazione terminerà in data-ora: " + simulationEndDate.toString());
             deploySensorsAndLogger();
-            vertx.cancelTimer(timerIDForRemainingTime);
-            vertx.cancelTimer(timerIDForProgressCalculation);
-            vertx.cancelTimer(timerIDForCountdown);
-            createTimerForRemainingTime();
+            createTimerForEndOfSimulation();
             createTimerForProgressOfSimulation();
             countdownOn();
         }
@@ -64,21 +63,18 @@ public class Engine extends AbstractVerticle {
             Seconds secondsToStartSimulation = Seconds.secondsBetween(DateTime.now(), simulationStartDate);
             periodOfTimeUntilSimulationStarts = secondsToStartSimulation.getSeconds() * 1000; //to get millis
             vertx.deployVerticle(logger);
-            simulationStartDate=DateTime.now().plus(periodOfTimeUntilSimulationStarts);
-            simulationEndDate=simulationStartDate.plus(periodOfTimeUntilSimulationStarts+periodOfTimeOfSimulation);
+            //simulationStartDate=DateTime.now().plus(periodOfTimeUntilSimulationStarts);
+            simulationEndDate=simulationStartDate.plus(periodOfTimeOfSimulation);
             System.out.println("La simulazione inizierà in data-ora: " + simulationStartDate.toString());
-            System.out.println("La simulazione terminerà in data-ora: " + simulationStartDate.toString());
+            System.out.println("La simulazione terminerà in data-ora: " + simulationEndDate.toString());
             timerIDForSimulationToStart=vertx.setTimer(periodOfTimeUntilSimulationStarts, new Handler<Long>() {
                 @Override
                 public void handle(Long aLong) {
                     currentState="Running";
-                    //simulationStartDate=DateTime.now();
+                    simulationStartDate=DateTime.now();
                     System.out.println("La simulazione è iniziata in data-ora: " + simulationStartDate.toString());
                     deploySensorsAndLogger();
-                    vertx.cancelTimer(timerIDForRemainingTime);
-                    vertx.cancelTimer(timerIDForProgressCalculation);
-                    vertx.cancelTimer(timerIDForCountdown);
-                    createTimerForRemainingTime();
+                    createTimerForEndOfSimulation();
                     createTimerForProgressOfSimulation();
                     countdownOn();
                 }
@@ -94,13 +90,17 @@ public class Engine extends AbstractVerticle {
                 {
                     currentState="Running";
                     vertx.cancelTimer(timerIDForSimulationToStart);
+                    vertx.cancelTimer(timerIDForEndOfSimulation);
+                    vertx.cancelTimer(timerIDForProgressCalculation);
+                    vertx.cancelTimer(timerIDForCountdown);
                     simulationStartDate=DateTime.now();
-                    createTimerForRemainingTime();
+                    createTimerForEndOfSimulation();
                     createTimerForProgressOfSimulation();
                     countdownOn();
                 }
                 else if(message.body().toString().equals("stop"))
                 {
+                    currentState="Stopped";
                    vertx.undeploy(deploymentID());
                 }
             }
@@ -110,12 +110,13 @@ public class Engine extends AbstractVerticle {
                 {
                     currentState="Paused";
                     undeploySensorsAndLogger();
-                    vertx.cancelTimer(timerIDForRemainingTime);
+                    vertx.cancelTimer(timerIDForEndOfSimulation);
                     vertx.cancelTimer(timerIDForProgressCalculation);
                     vertx.cancelTimer(timerIDForCountdown);
                 }
                 else if(message.body().toString().equals("stop"))
                 {
+                    currentState="Stopped";
                     vertx.undeploy(deploymentID());
                 }
             }
@@ -126,15 +127,13 @@ public class Engine extends AbstractVerticle {
                     currentState="Running";
                     deploySensorsAndLogger();
                     simulationEndDate=DateTime.now().plus(periodOfTimeOfSimulation-(passedTime*1000));
-                    vertx.cancelTimer(timerIDForRemainingTime);
-                    vertx.cancelTimer(timerIDForProgressCalculation);
-                    vertx.cancelTimer(timerIDForCountdown);
-                    createTimerForRemainingTime();
+                    createTimerForEndOfSimulation();
                     createTimerForProgressOfSimulation();
                     countdownOn();
                 }
                 else if(message.body().toString().equals("stop"))
                 {
+                    currentState="Stopped";
                     vertx.undeploy(deploymentID());
                 }
             }
@@ -144,13 +143,14 @@ public class Engine extends AbstractVerticle {
 
     @Override
     public void stop() throws Exception {
-        currentState="Ended";
         undeploySensorsAndLogger();
         simulationEndDate=DateTime.now();
         System.out.println("La simulazione è terminata in data-ora: " + simulationEndDate.toString());
-        vertx.cancelTimer(timerIDForRemainingTime);
+        vertx.cancelTimer(timerIDForSimulationToStart);
+        vertx.cancelTimer(timerIDForEndOfSimulation);
         vertx.cancelTimer(timerIDForCountdown);
         vertx.cancelTimer(timerIDForProgressCalculation);
+        if(currentState.equals("Ended"))
         progressOfSimulation=100;
 
     }
@@ -191,17 +191,26 @@ public class Engine extends AbstractVerticle {
         return currentState;
     }
 
-    public float getProgressOfSimulation()
+    public int getPeriodOfTimeOfSimulation()
+    {return this.periodOfTimeOfSimulation; }
+
+    public long getPassedTime()
     {
-        return progressOfSimulation;
+        return this.passedTime;
     }
 
-    public void createTimerForRemainingTime()
+    public int getProgressOfSimulation()
     {
-        long remainingTime=periodOfTimeOfSimulation-passedTime;
-        timerIDForRemainingTime=vertx.setTimer(remainingTime, new Handler<Long>() {
+        return (int)progressOfSimulation;
+    }
+
+    public void createTimerForEndOfSimulation()
+    {
+        long remainingTime=periodOfTimeOfSimulation-passedTime*1000;
+        timerIDForEndOfSimulation=vertx.setTimer(remainingTime, new Handler<Long>() {
             @Override
             public void handle(Long aLong){
+                currentState="Ended";
                 vertx.undeploy(deploymentID());
             }
         });
@@ -214,7 +223,7 @@ public class Engine extends AbstractVerticle {
             public void handle(Long aLong) {
                 passedTime++;
                 if(!(passedTime<=periodOfTimeOfSimulation)) {
-                    //vertx.eventBus().send("commands"+getId(),"stop");
+                    currentState="Ended";
                     vertx.undeploy(deploymentID());
                 }
             }

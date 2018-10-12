@@ -8,10 +8,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
-import it.filippetti.sp.simulator.model.MeasureType;
-import it.filippetti.sp.simulator.model.Scenario;
-import it.filippetti.sp.simulator.model.SnapshotModel;
-import it.filippetti.sp.simulator.model.TypeOfArray;
+import it.filippetti.sp.simulator.model.*;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -429,35 +426,99 @@ public class ServerRestSimulation extends AbstractVerticle {
                     SnapshotModel currentSnapshotModel = new SnapshotModel(modelName, cat, probability);
                     currentSensor.addModel(currentSnapshotModel);
 
-
+                    MeasureType currentMeasureType;
                     JSONArray jsonArrayOfMeasureTypesOfSnapshotModelOfSensor = jsonObjectOfSnapshotModelOfSensor.getJSONArray("measures");
                     for (int k = 0; k < jsonArrayOfMeasureTypesOfSnapshotModelOfSensor.length(); k++) {
+
 
                         JSONObject jsonObjectOfMeasureTypeOfSnapshotModelOfSensor = jsonArrayOfMeasureTypesOfSnapshotModelOfSensor.getJSONObject(k);
 
                         String meaName = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("meaName").toString();
                         String key = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("key").toString();
                         String unity = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("unity").toString();
-                        String min = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("min").toString();
-                        String max = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("max").toString();
                         String source = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("source").toString();
                         String destination = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("destination").toString();
                         String selArray = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("selArray").toString();
-
-                       Double prob;
-                       Double variance;
-
                         if (source.equals("")) source = null;
                         if (destination.equals("")) destination = null;
 
-                        if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("prob").toString().equals("")) prob = null;
-                        else prob = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("prob").toString());
+                        List<TriadOfValueProbabilityVariance> listOfTriadsOfValueProbabilityVariance = new ArrayList<TriadOfValueProbabilityVariance>();
 
-                        if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("variance").toString().equals("")) variance = null;
-                        else variance = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("variance").toString());
+                        if(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.has("values")) //1a priorità per i valori predefiniti
+                        {
+                            JSONArray jsonArrayOfTriadsOfValueProbabilityVariance = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.getJSONArray("values");
+                            if (jsonArrayOfTriadsOfValueProbabilityVariance.length()==0) throw new Exception();
+                            else
+                            {
+                                for (int l = 0; l < jsonArrayOfTriadsOfValueProbabilityVariance.length(); l++) {
+                                    JSONObject jsonObjectOfTriadOfValueProbabilityVariance = jsonArrayOfTriadsOfValueProbabilityVariance.getJSONObject(l);
 
-                        MeasureType currentMeasureType = new MeasureType(meaName, key, unity, min, max, source, destination, prob, variance, TypeOfArray.valueOf(selArray));
-                        currentSnapshotModel.addMeasureType(currentMeasureType);
+                                    Double valueOfTriad = jsonObjectOfTriadOfValueProbabilityVariance.getDouble("val");
+                                    Double probabilityOfTriad = jsonObjectOfTriadOfValueProbabilityVariance.getDouble("prob");
+                                    Double varianceOfTriad = jsonObjectOfTriadOfValueProbabilityVariance.getDouble("var");
+
+                                    listOfTriadsOfValueProbabilityVariance.add(new TriadOfValueProbabilityVariance(valueOfTriad,probabilityOfTriad,varianceOfTriad));
+                                }
+
+                            }
+                            currentMeasureType=new MeasureType(meaName,key,unity,source,destination,TypeOfArray.valueOf(selArray),listOfTriadsOfValueProbabilityVariance);
+                            currentSnapshotModel.addMeasureType(currentMeasureType);
+                        }
+                        else if(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.has("behavior"))      //2a priorità all'andamento
+                        {
+
+                            Behavior behavior;
+                            if(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("increasing-linear"))
+                                behavior=Behavior.INCREASINGLINEAR;
+
+                            else if(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("decreasing-linear"))
+                                behavior=Behavior.DECREASINGLINEAR;
+
+                            else if(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("increasing-exponential"))
+                                behavior=Behavior.INCREASINGEXPONENTIAL;
+
+                            else if(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("decreasing-exponential"))
+                                behavior=Behavior.DECREASINGEXPONENTIAL;
+
+                            else if(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("sinusoidal"))
+                                behavior=Behavior.SINUSOIDAL;
+
+                            else if(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("cosinusoidal"))
+                                behavior=Behavior.COSINUSOIDAL;
+
+                            else if(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("gaussian"))
+                                behavior=Behavior.GAUSSIAN;
+                            else throw new Exception();
+                            Double min = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("min").toString());
+                            Double max = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("max").toString());
+                            Double prob;
+                            Double variance;
+
+                            if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("prob").toString().equals("")) prob = null;
+                            else prob = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("prob").toString());
+
+                            if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("variance").toString().equals("")) variance = null;
+                            else variance = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("variance").toString());
+
+                            currentMeasureType=new MeasureType(meaName,key,unity,min,max,source,destination,prob,variance,TypeOfArray.valueOf(selArray),behavior);
+                            currentSnapshotModel.addMeasureType(currentMeasureType);
+                        }
+                        else
+                        {
+
+                            Double min = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("min").toString());
+                            Double max = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("max").toString());
+                            Double prob;
+                            Double variance;
+
+                            if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("prob").toString().equals("")) prob = null;
+                            else prob = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("prob").toString());
+
+                            if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("variance").toString().equals("")) variance = null;
+                            else variance = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("variance").toString());
+                            currentMeasureType = new MeasureType(meaName,key,unity,min,max,source,destination,prob,variance,TypeOfArray.valueOf(selArray));
+                            currentSnapshotModel.addMeasureType(currentMeasureType);
+                        }
                     }
                 }
                 sensorsToInsertInScenario.add(currentSensor);
@@ -480,7 +541,6 @@ public class ServerRestSimulation extends AbstractVerticle {
     private class SetOfInstancesForSimulation {
         Scenario s;
         DateTime simulationStartDate;
-        DateTime simulationEndDate;
         int periodOfTimeOfSimulation;
 
         public SetOfInstancesForSimulation(Scenario s, DateTime simulationStartDate, int periodOfTimeOfSimulation) {

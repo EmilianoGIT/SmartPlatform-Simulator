@@ -46,25 +46,12 @@ public class MqttSender extends AbstractVerticle {
         });
 
 
-        /*
-        MessageConsumer<JsonObject> consumer = vertx.eventBus().consumer("snapshot-for-mqtt-sender");
-        consumer.handler(message -> {
-            String otopic = message.body().getString("topic");
-            JsonObject snap = message.body().getJsonObject("snapshot");
-        });
-        */
         vertx.eventBus().consumer("snapshot-for-mqtt-sender", message -> {
 
             JSONObject jsonObjectForBroker= new JSONObject(message.body().toString());
 
             String topic=jsonObjectForBroker.get("topic").toString();
             String snapshot=jsonObjectForBroker.getJSONObject("snapshot").toString();
-
-            String[] splitted = message.body().toString().split("tsDelimiter");
-            //   System.out.println(splitted[0]);
-            //   System.out.println(splitted[1]);
-            //fai publish al Broker Mqtt
-
 
             client.publish(topic,
                     Buffer.buffer(snapshot),
