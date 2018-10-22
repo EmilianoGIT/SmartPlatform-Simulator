@@ -20,11 +20,9 @@ public class Logger extends AbstractVerticle {
         vertx.eventBus().consumer(this.deploymentID(), message -> {
 
             int i;
-            for(i=producedSnapshots.length()-limitOfKeptSnapshots; i>-1; i--)
-            {
+            for (i = producedSnapshots.length() - limitOfKeptSnapshots; i > -1; i--) {
                 producedSnapshots.remove(i);
             }
-                System.out.println(producedSnapshots.toString());
             this.producedSnapshots.put(new JSONObject(message.body().toString()));
             System.out.println(getProducedSnapshots().toString());
         });

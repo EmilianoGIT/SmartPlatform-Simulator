@@ -27,18 +27,9 @@ public class SnapshotModel {
         }
     }
 
-    public void setCategory(String cat) {
-        this.cat = cat;
-    }
-
-    public void setProbability(Float probability) {
-        this.probability = probability;
-    }
-
     public int getId() {
         return this.id;
     }
-
 
     public String getModelName() {
         return this.modelName;
@@ -48,8 +39,16 @@ public class SnapshotModel {
         return this.cat;
     }
 
+    public void setCategory(String cat) {
+        this.cat = cat;
+    }
+
     public Float getProbability() {
         return this.probability;
+    }
+
+    public void setProbability(Float probability) {
+        this.probability = probability;
     }
 
     public HashMap<Integer, MeasureType> getMeasureTypes() {

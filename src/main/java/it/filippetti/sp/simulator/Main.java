@@ -43,7 +43,7 @@ public class Main {
                 throw new Exception();
 
             serverRestSimulation = new ServerRestSimulation(Integer.parseInt(serverRestPort));
-            mqttSender = new MqttSender(mqttBrokerAddress, Integer.parseInt(mqttBrokerPort), mqttBrokerUsername,mqttBrokerPassword,Boolean.parseBoolean(mqttBrokerUseSSL));
+            mqttSender = new MqttSender(mqttBrokerAddress, Integer.parseInt(mqttBrokerPort), mqttBrokerUsername, mqttBrokerPassword, Boolean.parseBoolean(mqttBrokerUseSSL));
 
             vertx.deployVerticle(serverRestSimulation);
             vertx.deployVerticle(mqttSender);

@@ -5,6 +5,8 @@
     <output-test url="file://$MODULE_DIR$/target/test-classes" />
     <content url="file://$MODULE_DIR$">
       <sourceFolder url="file://$MODULE_DIR$/src/main/java" isTestSource="false" />
+      <sourceFolder url="file://$MODULE_DIR$/src/main/resources" type="java-resource" />
+      <sourceFolder url="file://$MODULE_DIR$/tests" isTestSource="true" />
       <excludeFolder url="file://$MODULE_DIR$/target" />
     </content>
     <orderEntry type="inheritedJdk" />
@@ -30,12 +32,9 @@
     <orderEntry type="library" name="Maven: io.vertx:vertx-bridge-common:3.5.1" level="project" />
     <orderEntry type="library" name="Maven: io.vertx:vertx-mqtt:3.5.1" level="project" />
     <orderEntry type="library" name="Maven: io.netty:netty-codec-mqtt:4.1.19.Final" level="project" />
-    <orderEntry type="library" name="Maven: org.mongodb:mongodb-driver:3.6.3" level="project" />
-    <orderEntry type="library" name="Maven: org.mongodb:bson:3.6.3" level="project" />
-    <orderEntry type="library" name="Maven: org.mongodb:mongodb-driver-core:3.6.3" level="project" />
-    <orderEntry type="library" name="Maven: io.vertx:vertx-mongo-client:3.5.1" level="project" />
-    <orderEntry type="library" name="Maven: org.mongodb:mongodb-driver-async:3.6.1" level="project" />
     <orderEntry type="library" name="Maven: org.json:json:20180130" level="project" />
     <orderEntry type="library" name="Maven: joda-time:joda-time:2.9.9" level="project" />
+    <orderEntry type="library" name="Maven: junit:junit:4.12" level="project" />
+    <orderEntry type="library" name="Maven: org.hamcrest:hamcrest-core:1.3" level="project" />
   </component>
 </module>
