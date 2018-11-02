@@ -34,9 +34,9 @@ public class Main {
 
             System.out.println("Server Rest port: " + serverRestPort);
             System.out.println("MQTT Broker address: " + mqttBrokerAddress);
-            System.out.println("MQTT Broker port" + mqttBrokerPort);
-            System.out.println("MQTT Broker username" + mqttBrokerUsername);
-            System.out.println("MQTT Broker use SSL" + mqttBrokerUseSSL);
+            System.out.println("MQTT Broker port: " + mqttBrokerPort);
+            System.out.println("MQTT Broker username: " + mqttBrokerUsername);
+            System.out.println("MQTT Broker use SSL: " + mqttBrokerUseSSL);
             reader.close();
 
             if (serverRestPort == null || mqttBrokerAddress == null || mqttBrokerPort == null)

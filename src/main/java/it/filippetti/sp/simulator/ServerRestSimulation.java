@@ -3,7 +3,6 @@ package it.filippetti.sp.simulator;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
-import io.vertx.core.http.HttpServerResponse;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
@@ -15,8 +14,6 @@ import org.joda.time.format.DateTimeFormatter;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.beans.SimpleBeanInfo;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -49,14 +46,6 @@ public class ServerRestSimulation extends AbstractVerticle {
                 .allowedHeader("Access-Control-Allow-Origin")
                 .allowedHeader("Access-Control-Allow-Credentials")
                 .allowedHeader("Content-Type"));
-
-        router.route("/").handler(routingContext -> {
-            HttpServerResponse response = routingContext.response();
-            response
-                    .putHeader("content-type", "text/html")
-                    .end("<h1>Root delle api REST con Vertx</h1>");
-        });
-
 
         vertx
                 .createHttpServer()
@@ -259,6 +248,7 @@ public class ServerRestSimulation extends AbstractVerticle {
                 .putHeader("Access-Control-Allow-Origin", "*")
                 .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 .putHeader("Access-Control-Allow-Credentials", "true")
+                .setStatusCode(200)
                 .end(jsonArrayOfEngines.toString());
     }
 
@@ -276,7 +266,10 @@ public class ServerRestSimulation extends AbstractVerticle {
                 JSONObject jsonObjectOfEngine = new JSONObject();
                 jsonObjectOfEngine.put("id", engines.get(idAsInteger).getId());
                 jsonObjectOfEngine.put("startDate", getFixedDateTime(engines.get(idAsInteger).getSimulationStartDate()));
-                jsonObjectOfEngine.put("endDate", getFixedDateTime(engines.get(idAsInteger).getSimulationEndDate()));
+                if (engines.get(idAsInteger).getCurrentState().equals("Paused"))
+                    jsonObjectOfEngine.put("endDate", "--/--/---- --:--:--");
+                else
+                    jsonObjectOfEngine.put("endDate", getFixedDateTime(engines.get(idAsInteger).getSimulationEndDate()));
                 jsonObjectOfEngine.put("progressionPercentage", engines.get(idAsInteger).getProgressOfSimulation());
                 jsonObjectOfEngine.put("currentState", engines.get(idAsInteger).getCurrentState());
                 jsonObjectOfEngine.put("sceName", engines.get(idAsInteger).getScenario().getScenName());
@@ -285,6 +278,7 @@ public class ServerRestSimulation extends AbstractVerticle {
                         .putHeader("Access-Control-Allow-Origin", "*")
                         .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                         .putHeader("Access-Control-Allow-Credentials", "true")
+                        .setStatusCode(200)
                         .end(jsonObjectOfEngine.toString());
             }
         }
@@ -293,14 +287,15 @@ public class ServerRestSimulation extends AbstractVerticle {
 
     private void getProducedSnapshots(RoutingContext routingContext) {
 
+        routingContext.response()
+                .putHeader("content-type", "application/json; charset=utf-8")
+                .putHeader("Access-Control-Allow-Origin", "*")
+                .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                .putHeader("Access-Control-Allow-Credentials", "true");
 
         String id = routingContext.request().getParam("id");
         if (id == null) {
             routingContext.response().setStatusCode(400)
-                    .putHeader("content-type", "application/json; charset=utf-8")
-                    .putHeader("Access-Control-Allow-Origin", "*")
-                    .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                    .putHeader("Access-Control-Allow-Credentials", "true")
                     .end();
         } else {
             Integer idAsInteger = Integer.valueOf(id);
@@ -308,31 +303,28 @@ public class ServerRestSimulation extends AbstractVerticle {
                 routingContext.response().setStatusCode(404).end();
             else {
                 routingContext.response()
-                        .putHeader("content-type", "application/json; charset=utf-8")
-                        .putHeader("Access-Control-Allow-Origin", "*")
-                        .putHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                        .putHeader("Access-Control-Allow-Credentials", "true")
+                        .setStatusCode(200)
                         .end(engines.get(idAsInteger).getLogger().producedSnapshots.toString());
+
             }
         }
-
 
     }
 
 
     private SetOfInstancesForSimulation fromJsonForSimulationToInstancesForSimulation(JSONObject jsonOfSimulation) throws Exception {
 
-        Scenario instanceOfScenario;
+        Scenario scenario;
         List<Sensor> sensorsToInsertInScenario = new ArrayList<>();
-        DateTime ssd;
-        int periodOfTimeOfSimulation; //in minutes
+        DateTime simulationStartDate;
+        int periodOfTimeOfSimulation; //in secondi
 
 
         if (jsonOfSimulation.get("simStartDate").toString().equals(""))
-            ssd = DateTime.now();
-        else ssd = DateTime.parse(jsonOfSimulation.get("simStartDate").toString());
+            simulationStartDate = DateTime.now();
+        else simulationStartDate = DateTime.parse(jsonOfSimulation.get("simStartDate").toString());
 
-        String regexTimer = "([0-9][0-9]:[0-5][0-9]:[0-5][0-9])";
+        String regexTimer = "([0-9][0-9]:[0-5][0-9]:[0-5][0-9])|([0-9][0-9]:[0-5][0-9])";  // regular expression per il formato hh:mm:ss o hh:mm
         Pattern pattern = Pattern.compile(regexTimer);
         String simDuration = jsonOfSimulation.get("simDuration").toString();
         if (simDuration.equals("00:00:00") || simDuration.equals("00:00"))
@@ -494,28 +486,28 @@ public class ServerRestSimulation extends AbstractVerticle {
             sensorsToInsertInScenario.add(currentSensor);
         }
 
-        instanceOfScenario = new Scenario(scenName, sensorsToInsertInScenario.get(0));
+        scenario = new Scenario(scenName, sensorsToInsertInScenario.get(0));
         if (sensorsToInsertInScenario.size() - 1 > 0) {
             for (int i = 1; i < sensorsToInsertInScenario.size(); i++) {
-                instanceOfScenario.addSensor(sensorsToInsertInScenario.get(i));
+                scenario.addSensor(sensorsToInsertInScenario.get(i));
             }
         }
-        return new SetOfInstancesForSimulation(instanceOfScenario, ssd, periodOfTimeOfSimulation);
+        return new SetOfInstancesForSimulation(scenario, simulationStartDate, periodOfTimeOfSimulation);
 
     }
 
-    public String getFixedDateTime(DateTime dateTime) {
+    private String getFixedDateTime(DateTime dateTime) {
         DateTimeFormatter fmt = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss");
         String fixedDateTime = fmt.print(dateTime);
         return fixedDateTime;
     }
 
-    private class SetOfInstancesForSimulation {
+    private class SetOfInstancesForSimulation {         //classe utile per il raggruppamento delle istanze da passare all'engine
         Scenario scenario;
         DateTime simulationStartDate;
         int periodOfTimeOfSimulation;
 
-        public SetOfInstancesForSimulation(Scenario s, DateTime simulationStartDate, int periodOfTimeOfSimulation) {
+        private SetOfInstancesForSimulation(Scenario s, DateTime simulationStartDate, int periodOfTimeOfSimulation) {
             this.scenario = s;
             this.simulationStartDate = simulationStartDate;
 
@@ -523,15 +515,15 @@ public class ServerRestSimulation extends AbstractVerticle {
         }
 
 
-        public Scenario getScenario() {
+        private Scenario getScenario() {
             return this.scenario;
         }
 
-        public DateTime getSimulationStartDate() {
+        private DateTime getSimulationStartDate() {
             return this.simulationStartDate;
         }
 
-        public int getPeriodOfTimeOfSimulation() {
+        private int getPeriodOfTimeOfSimulation() {
             return this.periodOfTimeOfSimulation;
         }
 

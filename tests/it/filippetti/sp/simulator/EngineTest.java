@@ -13,7 +13,7 @@ import static org.junit.Assert.*;
 public class EngineTest {
 
     @Test(expected = Exception.class)
-    public void engineIsNotCreatedIfPeriodOfSimulationTimeIsLowerThan1Second() throws Exception{
+    public void engineIsNotCreatedIfPeriodOfSimulationTimeIsLowerThan1Second() throws Exception {
 
         Vertx vertx = Vertx.vertx();
         DateTime simulationStartDateAsParameter = DateTime.parse("2000-10-04T20:02:00"); //data vecchia

@@ -8,7 +8,7 @@ public class SensorTest {
 
     @Test(expected = Exception.class)
     public void sensorIsNotCreatedIfPollingTimeIsLowerThan1Second() throws Exception {
-            Sensor sensor = new Sensor("refTest","refTest", "typeTest", 10, "topicTest");
+        Sensor sensor = new Sensor("refTest", "refTest", "typeTest", 10, "topicTest");
     }
 
 }

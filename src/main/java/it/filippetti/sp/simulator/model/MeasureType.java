@@ -1,4 +1,5 @@
 package it.filippetti.sp.simulator.model;
+
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -55,9 +56,10 @@ public class MeasureType {
 
     }
 
-    public MeasureType(String measureTypeName, String key, String unity, String source, String destination, TypeOfArray whichArray, List<TriadOfValueProbabilityVariance> triadOfValueProbabilityVariances) throws Exception{ //costruttore per misura con value, probability e variance predefiniti
+    public MeasureType(String measureTypeName, String key, String unity, String source, String destination, TypeOfArray whichArray, List<TriadOfValueProbabilityVariance> triadOfValueProbabilityVariances) throws Exception { //costruttore per misura con value, probability e variance predefiniti
 
-        if(triadOfValueProbabilityVariances==null || triadOfValueProbabilityVariances.isEmpty()) throw new Exception("I values non possono essere null o vuoti");
+        if (triadOfValueProbabilityVariances == null || triadOfValueProbabilityVariances.isEmpty())
+            throw new Exception("I values non possono essere null o vuoti");
         this.id = COUNTER.getAndIncrement();
         this.measureTypeName = measureTypeName;
         this.key = key;
@@ -96,16 +98,8 @@ public class MeasureType {
         return this.source;
     }
 
-    public void setSource(String source) {
-        this.source = source;
-    }
-
     public String getDestination() {
         return this.destination;
-    }
-
-    public void setDestination(String destination) {
-        this.destination = destination;
     }
 
     public Double getVariance() {

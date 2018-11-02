@@ -19,8 +19,8 @@ public class Engine extends AbstractVerticle {
     private DateTime simulationStartDate;        //data di inizio simulazione
     private DateTime simulationEndDate;          //data di fine simulazione
     private int periodOfTimeOfSimulation;         //durata della simulazione espressa in secondi
-    private String currentState = "";     // WaitingToStart, Running, Paused, Stopped, Ended
-    private float progressOfSimulation = 0.0f; //in percentuale
+    private String currentState = "";                // WaitingToStart, Running, Paused, Stopped, Ended
+    private float progressOfSimulation = 0.0f;          //in percentuale
     private long timerIDForProgressCalculation;
     private long timerIDForEndOfSimulation;
     private long timerIDForCountdown;
@@ -29,7 +29,8 @@ public class Engine extends AbstractVerticle {
 
     public Engine(DateTime simulationStartDate, int periodOfTimeOfSimulation, Scenario scenario) throws Exception {
 
-        if(periodOfTimeOfSimulation<1000) throw new Exception("Il tempo di simulazione non può essere minore di 1 secondo");
+        if (periodOfTimeOfSimulation < 1000)
+            throw new Exception("Il tempo di simulazione non può essere minore di 1 secondo");
         this.id = COUNTER.getAndIncrement();
         this.scenario = scenario;
         this.simulationStartDate = simulationStartDate;
@@ -49,9 +50,9 @@ public class Engine extends AbstractVerticle {
         if (simulationStartDate.isBeforeNow()) {
             currentState = "Running";
             simulationStartDate = DateTime.now();
-            System.out.println("La simulazione è iniziata in data-ora: " + simulationStartDate.toString());
+            System.out.println("La simulazione con id:" + getId() + " è iniziata in data-ora: " + simulationStartDate.toString());
             simulationEndDate = simulationStartDate.plus(periodOfTimeOfSimulation);
-            System.out.println("La simulazione terminerà in data-ora: " + simulationEndDate.toString());
+            System.out.println("La simulazione con id:" + getId() + " terminerà in data-ora: " + simulationEndDate.toString());
             deploySensorsAndLogger();
             createTimerForEndOfSimulation();
             createTimerForProgressOfSimulation();
@@ -62,16 +63,17 @@ public class Engine extends AbstractVerticle {
             Seconds secondsToStartSimulation = Seconds.secondsBetween(DateTime.now(), simulationStartDate);
             periodOfTimeUntilSimulationStarts = secondsToStartSimulation.getSeconds() * 1000; //to get millis
             vertx.deployVerticle(logger);
-            //simulationStartDate=DateTime.now().plus(periodOfTimeUntilSimulationStarts);
             simulationEndDate = simulationStartDate.plus(periodOfTimeOfSimulation);
-            System.out.println("La simulazione inizierà in data-ora: " + simulationStartDate.toString());
-            System.out.println("La simulazione terminerà in data-ora: " + simulationEndDate.toString());
+            System.out.println("La simulazione con id:" + getId() + " inizierà in data-ora: " + simulationStartDate.toString());
+            System.out.println("La simulazione con id:" + getId() + " terminerà in data-ora: " + simulationEndDate.toString());
+            if (periodOfTimeUntilSimulationStarts < 1)
+                periodOfTimeUntilSimulationStarts = 1;
             timerIDForSimulationToStart = vertx.setTimer(periodOfTimeUntilSimulationStarts, new Handler<Long>() {
                 @Override
                 public void handle(Long aLong) {
                     currentState = "Running";
                     simulationStartDate = DateTime.now();
-                    System.out.println("La simulazione è iniziata in data-ora: " + simulationStartDate.toString());
+                    System.out.println("La simulazione con id:" + getId() + " è iniziata in data-ora: " + simulationStartDate.toString());
                     deploySensorsAndLogger();
                     createTimerForEndOfSimulation();
                     createTimerForProgressOfSimulation();
@@ -130,7 +132,7 @@ public class Engine extends AbstractVerticle {
     public void stop() throws Exception {
         undeploySensorsAndLogger();
         simulationEndDate = DateTime.now();
-        System.out.println("La simulazione è terminata in data-ora: " + simulationEndDate.toString());
+        System.out.println("La simulazione con id:" + this.getId() + " è terminata");
         vertx.cancelTimer(timerIDForSimulationToStart);
         vertx.cancelTimer(timerIDForEndOfSimulation);
         vertx.cancelTimer(timerIDForCountdown);
@@ -146,10 +148,6 @@ public class Engine extends AbstractVerticle {
 
     public Scenario getScenario() {
         return this.scenario;
-    }
-
-    public void setScenario(Scenario scenario) {
-        this.scenario = scenario;
     }
 
     public int getId() {

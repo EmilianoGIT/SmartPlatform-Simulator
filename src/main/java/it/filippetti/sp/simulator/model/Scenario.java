@@ -1,6 +1,7 @@
 package it.filippetti.sp.simulator.model;
 
 import it.filippetti.sp.simulator.Sensor;
+
 import java.util.Set;
 import java.util.HashSet;
 
@@ -9,9 +10,9 @@ public class Scenario {
     String sceName;
     Set<Sensor> sensors = new HashSet<Sensor>();
 
-    public Scenario(String scenName, Sensor sensor) throws Exception {
+    public Scenario(String sceName, Sensor sensor) throws Exception {
 
-        this.sceName = scenName;
+        this.sceName = sceName;
 
         if (sensor.getSumOfProbability() != 1)
             throw new Exception("Impossibile inserire un sensore in cui i modelli non abbiano somma delle probabilità uguale a 1");

@@ -7,7 +7,7 @@ import org.json.JSONObject;
 public class Logger extends AbstractVerticle {
 
     JSONArray producedSnapshots = new JSONArray();
-    int limitOfKeptSnapshots = 10;
+    private int limitOfKeptSnapshots = 10;
 
     public Logger() {
 
@@ -32,11 +32,6 @@ public class Logger extends AbstractVerticle {
     @Override
     public void stop() throws Exception {
 
-    }
-
-
-    public void clearProducedSnapshots() {
-        this.producedSnapshots = new JSONArray();
     }
 
     public JSONArray getProducedSnapshots() {

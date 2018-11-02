@@ -3,8 +3,6 @@ package it.filippetti.sp.simulator;
 import io.netty.handler.codec.mqtt.MqttQoS;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.json.JsonObject;
 import io.vertx.mqtt.MqttClient;
 import io.vertx.mqtt.MqttClientOptions;
 import org.json.JSONObject;
