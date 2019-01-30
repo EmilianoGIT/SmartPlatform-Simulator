@@ -3,7 +3,7 @@ package it.filippetti.sp.simulator.model;
 import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SnapshotModel {
+public class Model {
 
     private static final AtomicInteger COUNTER = new AtomicInteger();
     private final int id;
@@ -12,7 +12,7 @@ public class SnapshotModel {
     Float probability;
     HashMap<Integer, MeasureType> measureTypes = new HashMap<Integer, MeasureType>();
 
-    public SnapshotModel(String modelName, String cat, Float probability) {
+    public Model(String modelName, String cat, Float probability) {
         this.id = COUNTER.getAndIncrement();
         this.modelName = modelName;
         this.cat = cat;

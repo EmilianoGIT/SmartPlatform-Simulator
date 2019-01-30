@@ -6,7 +6,7 @@ I valori delle misurazioni si possono basare su:
 
 1)-Una serie di valori predefiniti ("v", "p", "l")
 
-2)- Andamenti nel tempo contenuti in un range, tra cui: lineare crescente, lineare descrescente, esponenziale crescente, esponenziale decrescente, sinusoidale, cosinusoidale, e gaussiana.
+2)- Andamenti nel tempo contenuti in un range, tra cui: lineare crescente, lineare descrescente, esponenziale crescente, esponenziale decrescente, sinusoidale, cosinusoidale, gaussiana, quadratico, cubico, radice quadrata, radice cubica e logaritmico .
 
 3)- Random generato da range (senza un criterio)
 
@@ -355,35 +355,35 @@ Esempio per il JSON di simulazione
 - Dentro un modello ci possono essere più misurazioni. Nel JSON object della misura vengono considerate in ordine di priorità:
 1. Misure predefinite, che sono contenute nell'array "values". 
 
-2. La seconda priorità viene data dalla presenza della key "behavior", che sta a indicare il fatto che i valori della misura nel corso del tempo seguiranno un certo andamento. I valori di "behavior" possono essere "increasing-linear", "decreasing-linear", "increasing-exponential", "decreasing-exponential", "sinusoidal", "cosinusoidal", "gaussian". 
+2. La seconda priorità viene data dalla presenza della key "behavior", che sta a indicare il fatto che i valori della misura nel corso del tempo seguiranno un certo andamento. I valori di "behavior" possono essere "increasing-linear", "decreasing-linear", "increasing-exponential", "decreasing-exponential", "sinusoidal", "cosinusoidal", "gaussian", "quadratic", "cubic", "square-root", "cubic-root", "logarithmic". 
 
 3. Se non ci sono le keys "values" e "behavior", allora il valore viene calcolato in modo randomico dal min e max senza un criterio.
 
 b)- API per riprendere una simulazione o far partire prima della data prefissata
 ```
-GET "/api/v1.0/simulator/simulations/:id/play"
+GET "/api/v2.0/simulator/simulations/:id/play"
 ```
 c)- API per stoppare una simulazione
 ```
-GET "/api/v1.0/simulator/simulations/:id/stop"
+GET "/api/v2.0/simulator/simulations/:id/stop"
 ```
 d)- API per mettere in pausa la simulazione
 ```
-GET "/api/v1.0/simulator/simulations/:id/pause"
+GET "/api/v2.0/simulator/simulations/:id/pause"
 ```
 e)- API per eliminare un'istanza di simulazione (di conseguenza non sarà più possibile vedere i risulati)
 ```
-DELETE "/api/v1.0/simulator/simulations/:id"
+DELETE "/api/v2.0/simulator/simulations/:id"
 ```
 f)- API per visualizzare l'elenco delle simulazioni con i loro stati
 ```
-GET "/api/v1.0/simulator/simulations"
+GET "/api/v2.0/simulator/simulations"
 ```
 g)- API per visualizzare lo stato di una simulazione
 ```
-GET "/api/v1.0/simulator/simulations/:id"
+GET "/api/v2.0/simulator/simulations/:id"
 ```
 h)- API per visualizzare gli ultimi snapshots prodotti da una simulazine (gli ultimi 10)
 ```
-GET "/api/v1.0/simulator/simulations/:id/snapshots"
+GET "/api/v2.0/simulator/simulations/:id/snapshots"
 ```

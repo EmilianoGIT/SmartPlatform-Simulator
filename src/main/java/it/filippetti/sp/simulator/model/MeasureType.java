@@ -23,7 +23,7 @@ public class MeasureType {
 
     public MeasureType(String measureTypeName, String key, String unity, Double minRange, Double maxRange, String source, String destination, Double probability, Double variance, TypeOfArray whichArray) throws Exception { //costruttore per misura con value dipendente da range
 
-        if (minRange > maxRange) throw new Exception("Min non può essere > di Max");
+        if (minRange > maxRange) throw new Exception("Min can't be greater than Max");
         this.id = COUNTER.getAndIncrement();
         this.measureTypeName = measureTypeName;
         this.key = key;
@@ -40,7 +40,7 @@ public class MeasureType {
 
     public MeasureType(String measureTypeName, String key, String unity, Double minRange, Double maxRange, String source, String destination, Double probability, Double variance, TypeOfArray whichArray, Behavior behavior) throws Exception { ////costruttore per misura con value dipendente da range e andamento
 
-        if (minRange > maxRange) throw new Exception("Min non può essere > di Max");
+        if (minRange > maxRange) throw new Exception("Min can't be greater than Max");
         this.id = COUNTER.getAndIncrement();
         this.measureTypeName = measureTypeName;
         this.key = key;
@@ -59,7 +59,7 @@ public class MeasureType {
     public MeasureType(String measureTypeName, String key, String unity, String source, String destination, TypeOfArray whichArray, List<TriadOfValueProbabilityVariance> triadOfValueProbabilityVariances) throws Exception { //costruttore per misura con value, probability e variance predefiniti
 
         if (triadOfValueProbabilityVariances == null || triadOfValueProbabilityVariances.isEmpty())
-            throw new Exception("I values non possono essere null o vuoti");
+            throw new Exception("Values can't be empty or null");
         this.id = COUNTER.getAndIncrement();
         this.measureTypeName = measureTypeName;
         this.key = key;
@@ -123,11 +123,11 @@ public class MeasureType {
     }
 
 
-    public TriadOfValueProbabilityVariance getCurrentTriad() {
+    public TriadOfValueProbabilityVariance getCurrentTriad() { //metodo per prendere i v, p e l correnti
         return this.triadOfValueProbabilityVariances.get(this.currentIndexOfTriad);
     }
 
-    public void computeNextTriad() {
+    public void computeNextTriad() {        //metodo per selezionare i prossimi v, p e l da inserire nello snapshot, in caso si abbiano valori predefiniti
         if (this.currentIndexOfTriad + 1 == this.triadOfValueProbabilityVariances.size())
             this.currentIndexOfTriad = 0;
         else this.currentIndexOfTriad++;

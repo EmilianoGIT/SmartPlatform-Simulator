@@ -2,6 +2,7 @@ package it.filippetti.sp.simulator;
 
 
 import io.vertx.core.Vertx;
+import it.filippetti.sp.simulator.model.Behavior;
 
 import java.io.File;
 import java.io.FileNotFoundException;

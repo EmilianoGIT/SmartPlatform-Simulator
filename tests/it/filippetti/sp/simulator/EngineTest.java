@@ -3,7 +3,7 @@ package it.filippetti.sp.simulator;
 import io.vertx.core.Vertx;
 import it.filippetti.sp.simulator.model.MeasureType;
 import it.filippetti.sp.simulator.model.Scenario;
-import it.filippetti.sp.simulator.model.SnapshotModel;
+import it.filippetti.sp.simulator.model.Model;
 import it.filippetti.sp.simulator.model.TypeOfArray;
 import org.joda.time.DateTime;
 import org.junit.Test;
@@ -19,8 +19,8 @@ public class EngineTest {
         DateTime simulationStartDateAsParameter = DateTime.parse("2000-10-04T20:02:00"); //data vecchia
         MeasureType measureType1 = new MeasureType("measure1", "key1", "unity1", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
         MeasureType measureType2 = new MeasureType("measure2", "key2", "unity2", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
-        SnapshotModel model1 = new SnapshotModel("model1Test", "0222", 0.6f);
-        SnapshotModel model2 = new SnapshotModel("model2Test", "0222", 0.4f);
+        Model model1 = new Model("model1Test", "0222", 0.6f);
+        Model model2 = new Model("model2Test", "0222", 0.4f);
         model1.addMeasureType(measureType1);
         model1.addMeasureType(measureType2);
         model2.addMeasureType(measureType1);
@@ -41,8 +41,8 @@ public class EngineTest {
         DateTime simulationStartDateAsParameter = DateTime.parse("2000-10-04T20:02:00"); //data vecchia
         MeasureType measureType1 = new MeasureType("measure1", "key1", "unity1", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
         MeasureType measureType2 = new MeasureType("measure2", "key2", "unity2", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
-        SnapshotModel model1 = new SnapshotModel("model1Test", "0222", 0.6f);
-        SnapshotModel model2 = new SnapshotModel("model2Test", "0222", 0.4f);
+        Model model1 = new Model("model1Test", "0222", 0.6f);
+        Model model2 = new Model("model2Test", "0222", 0.4f);
         model1.addMeasureType(measureType1);
         model1.addMeasureType(measureType2);
         model2.addMeasureType(measureType1);
@@ -63,8 +63,8 @@ public class EngineTest {
         DateTime simulationStartDateAsParameter = DateTime.parse("2000-10-04T20:02:00"); //data vecchia
         MeasureType measureType1 = new MeasureType("measure1", "key1", "unity1", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
         MeasureType measureType2 = new MeasureType("measure2", "key2", "unity2", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
-        SnapshotModel model1 = new SnapshotModel("model1Test", "0222", 0.6f);
-        SnapshotModel model2 = new SnapshotModel("model2Test", "0222", 0.4f);
+        Model model1 = new Model("model1Test", "0222", 0.6f);
+        Model model2 = new Model("model2Test", "0222", 0.4f);
         model1.addMeasureType(measureType1);
         model1.addMeasureType(measureType2);
         model2.addMeasureType(measureType1);
@@ -84,8 +84,8 @@ public class EngineTest {
         Vertx vertx = Vertx.vertx();
         MeasureType measureType1 = new MeasureType("measure1", "key1", "unity1", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
         MeasureType measureType2 = new MeasureType("measure2", "key2", "unity2", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
-        SnapshotModel model1 = new SnapshotModel("model1Test", "0222", 0.6f);
-        SnapshotModel model2 = new SnapshotModel("model2Test", "0222", 0.4f);
+        Model model1 = new Model("model1Test", "0222", 0.6f);
+        Model model2 = new Model("model2Test", "0222", 0.4f);
         model1.addMeasureType(measureType1);
         model1.addMeasureType(measureType2);
         model2.addMeasureType(measureType1);
@@ -105,8 +105,8 @@ public class EngineTest {
         Vertx vertx = Vertx.vertx();
         MeasureType measureType1 = new MeasureType("measure1", "key1", "unity1", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
         MeasureType measureType2 = new MeasureType("measure2", "key2", "unity2", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
-        SnapshotModel model1 = new SnapshotModel("model1Test", "0222", 0.6f);
-        SnapshotModel model2 = new SnapshotModel("model2Test", "0222", 0.4f);
+        Model model1 = new Model("model1Test", "0222", 0.6f);
+        Model model2 = new Model("model2Test", "0222", 0.4f);
         model1.addMeasureType(measureType1);
         model1.addMeasureType(measureType2);
         model2.addMeasureType(measureType1);
@@ -129,8 +129,8 @@ public class EngineTest {
         DateTime simulationStartDateAsParameter = DateTime.parse("2000-10-04T20:02:00"); //data vecchia
         MeasureType measureType1 = new MeasureType("measure1", "key1", "unity1", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
         MeasureType measureType2 = new MeasureType("measure2", "key2", "unity2", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
-        SnapshotModel model1 = new SnapshotModel("model1Test", "0222", 0.6f);
-        SnapshotModel model2 = new SnapshotModel("model2Test", "0222", 0.4f);
+        Model model1 = new Model("model1Test", "0222", 0.6f);
+        Model model2 = new Model("model2Test", "0222", 0.4f);
         model1.addMeasureType(measureType1);
         model1.addMeasureType(measureType2);
         model2.addMeasureType(measureType1);
@@ -153,8 +153,8 @@ public class EngineTest {
         DateTime simulationStartDateAsParameter = DateTime.parse("2000-10-04T20:02:00"); //data vecchia
         MeasureType measureType1 = new MeasureType("measure1", "key1", "unity1", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
         MeasureType measureType2 = new MeasureType("measure2", "key2", "unity2", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
-        SnapshotModel model1 = new SnapshotModel("model1Test", "0222", 0.6f);
-        SnapshotModel model2 = new SnapshotModel("model2Test", "0222", 0.4f);
+        Model model1 = new Model("model1Test", "0222", 0.6f);
+        Model model2 = new Model("model2Test", "0222", 0.4f);
         model1.addMeasureType(measureType1);
         model1.addMeasureType(measureType2);
         model2.addMeasureType(measureType1);
@@ -178,8 +178,8 @@ public class EngineTest {
         DateTime simulationStartDateAsParameter = DateTime.parse("2000-10-04T20:02:00"); //data vecchia
         MeasureType measureType1 = new MeasureType("measure1", "key1", "unity1", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
         MeasureType measureType2 = new MeasureType("measure2", "key2", "unity2", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
-        SnapshotModel model1 = new SnapshotModel("model1Test", "0222", 0.6f);
-        SnapshotModel model2 = new SnapshotModel("model2Test", "0222", 0.4f);
+        Model model1 = new Model("model1Test", "0222", 0.6f);
+        Model model2 = new Model("model2Test", "0222", 0.4f);
         model1.addMeasureType(measureType1);
         model1.addMeasureType(measureType2);
         model2.addMeasureType(measureType1);

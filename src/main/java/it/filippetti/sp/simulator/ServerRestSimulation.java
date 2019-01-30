@@ -1,6 +1,5 @@
 package it.filippetti.sp.simulator;
 
-
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServerResponse;
@@ -26,7 +25,7 @@ import java.util.regex.Pattern;
 public class ServerRestSimulation extends AbstractVerticle {
 
     int port;
-    HashMap<Integer, Engine> engines = new HashMap<Integer, Engine>();
+    HashMap<String, Engine> engines = new HashMap<String, Engine>();
 
     public ServerRestSimulation(int port) {
         this.port = port;
@@ -59,8 +58,6 @@ public class ServerRestSimulation extends AbstractVerticle {
                 .createHttpServer()
                 .requestHandler(router::accept)
                 .listen(
-                        // Retrieve the port from the configuration,
-                        // default to 8080.
                         config().getInteger("http.port", port),
                         result -> {
                             if (result.succeeded()) {
@@ -72,14 +69,14 @@ public class ServerRestSimulation extends AbstractVerticle {
                 );
 
         router.route().handler(BodyHandler.create());
-        router.post("/api/v1.0/simulator/new_simulation").handler(this::newSimulation);
-        router.get("/api/v1.0/simulator/simulations/:id/play").handler(this::playSimulation);
-        router.get("/api/v1.0/simulator/simulations/:id/stop").handler(this::stopSimulation);
-        router.get("/api/v1.0/simulator/simulations/:id/pause").handler(this::pauseSimulation);
-        router.delete("/api/v1.0/simulator/simulations/:id").handler(this::deleteEngine);
-        router.get("/api/v1.0/simulator/simulations").handler(this::getAllEngines);
-        router.get("/api/v1.0/simulator/simulations/:id").handler(this::getOneEngine);
-        router.get("/api/v1.0/simulator/simulations/:id/snapshots").handler(this::getProducedSnapshots);
+        router.post("/api/v2.0/simulator/new_simulation").handler(this::newSimulation);
+        router.get("/api/v2.0/simulator/simulations/:id/play").handler(this::playSimulation);
+        router.get("/api/v2.0/simulator/simulations/:id/stop").handler(this::stopSimulation);
+        router.get("/api/v2.0/simulator/simulations/:id/pause").handler(this::pauseSimulation);
+        router.delete("/api/v2.0/simulator/simulations/:id").handler(this::deleteEngine);
+        router.get("/api/v2.0/simulator/simulations").handler(this::getAllEngines);
+        router.get("/api/v2.0/simulator/simulations/:id").handler(this::getOneEngine);
+        router.get("/api/v2.0/simulator/simulations/:id/snapshots").handler(this::getProducedSnapshots);
 
     }
 
@@ -137,13 +134,12 @@ public class ServerRestSimulation extends AbstractVerticle {
                     .end();
         } else {
 
-            Integer idAsInteger = Integer.valueOf(id);
-            if (engines.get(idAsInteger) == null) {
+            if (engines.get(id) == null) {
                 routingContext.response()
                         .setStatusCode(404)
                         .end();
             } else {
-                vertx.eventBus().send("commands" + idAsInteger, "play");
+                vertx.eventBus().send("commands" + id, "play");
                 routingContext.response()
                         .setStatusCode(200).
                         end();
@@ -166,13 +162,12 @@ public class ServerRestSimulation extends AbstractVerticle {
                     .end();
         } else {
 
-            Integer idAsInteger = Integer.valueOf(id);
-            if (engines.get(idAsInteger) == null) {
+            if (engines.get(id) == null) {
                 routingContext.response()
                         .setStatusCode(404)
                         .end();
             } else {
-                vertx.eventBus().send("commands" + idAsInteger, "pause");
+                vertx.eventBus().send("commands" + id, "pause");
                 routingContext.response()
                         .setStatusCode(200).
                         end();
@@ -195,14 +190,12 @@ public class ServerRestSimulation extends AbstractVerticle {
                     .setStatusCode(400)
                     .end();
         } else {
-
-            Integer idAsInteger = Integer.valueOf(id);
-            if (engines.get(idAsInteger) == null) {
+            if (engines.get(id) == null) {
                 routingContext.response()
                         .setStatusCode(404)
                         .end();
             } else {
-                vertx.eventBus().send("commands" + idAsInteger, "stop");
+                vertx.eventBus().send("commands" + id, "stop");
                 routingContext.response()
                         .setStatusCode(200).
                         end();
@@ -221,11 +214,9 @@ public class ServerRestSimulation extends AbstractVerticle {
         if (id == null) {
             routingContext.response().setStatusCode(400).end();
         } else {
-            Integer idAsInteger = Integer.valueOf(id);
-
-            vertx.undeploy(engines.get(idAsInteger).getLogger().deploymentID());
-            vertx.eventBus().send("commands" + idAsInteger, "stop");
-            engines.remove(idAsInteger);
+            vertx.undeploy(engines.get(id).getLogger().deploymentID());
+            vertx.eventBus().send("commands" + id, "stop");
+            engines.remove(id);
         }
         routingContext.response().setStatusCode(204).end();
 
@@ -235,7 +226,7 @@ public class ServerRestSimulation extends AbstractVerticle {
 
         JSONArray jsonArrayOfEngines = new JSONArray();
 
-        for (Map.Entry<Integer, Engine> entry : this.engines.entrySet()) {
+        for (Map.Entry<String, Engine> entry : this.engines.entrySet()) {
 
             JSONObject jsonObjectOfEngine = new JSONObject();
 
@@ -266,21 +257,20 @@ public class ServerRestSimulation extends AbstractVerticle {
         if (id == null) {
             routingContext.response().setStatusCode(400).end();
         } else {
-            final Integer idAsInteger = Integer.valueOf(id);
-            Integer idOfEngine = engines.get(idAsInteger).getId();
+            String idOfEngine = engines.get(id).getId();
             if (idOfEngine == null) {
                 routingContext.response().setStatusCode(404).end();
             } else {
                 JSONObject jsonObjectOfEngine = new JSONObject();
-                jsonObjectOfEngine.put("id", engines.get(idAsInteger).getId());
-                jsonObjectOfEngine.put("startDate", getFixedDateTime(engines.get(idAsInteger).getSimulationStartDate()));
-                if (engines.get(idAsInteger).getCurrentState().equals("Paused"))
+                jsonObjectOfEngine.put("id", engines.get(id).getId());
+                jsonObjectOfEngine.put("startDate", getFixedDateTime(engines.get(id).getSimulationStartDate()));
+                if (engines.get(id).getCurrentState().equals("Paused"))
                     jsonObjectOfEngine.put("endDate", "--/--/---- --:--:--");
                 else
-                    jsonObjectOfEngine.put("endDate", getFixedDateTime(engines.get(idAsInteger).getSimulationEndDate()));
-                jsonObjectOfEngine.put("progressionPercentage", engines.get(idAsInteger).getProgressOfSimulation());
-                jsonObjectOfEngine.put("currentState", engines.get(idAsInteger).getCurrentState());
-                jsonObjectOfEngine.put("sceName", engines.get(idAsInteger).getScenario().getScenName());
+                    jsonObjectOfEngine.put("endDate", getFixedDateTime(engines.get(id).getSimulationEndDate()));
+                jsonObjectOfEngine.put("progressionPercentage", engines.get(id).getProgressOfSimulation());
+                jsonObjectOfEngine.put("currentState", engines.get(id).getCurrentState());
+                jsonObjectOfEngine.put("sceName", engines.get(id).getScenario().getScenName());
                 routingContext.response()
                         .putHeader("content-type", "application/json; charset=utf-8")
                         .putHeader("Access-Control-Allow-Origin", "*")
@@ -306,13 +296,13 @@ public class ServerRestSimulation extends AbstractVerticle {
             routingContext.response().setStatusCode(400)
                     .end();
         } else {
-            Integer idAsInteger = Integer.valueOf(id);
-            if (engines.get(idAsInteger) == null)
+
+            if (engines.get(id) == null)
                 routingContext.response().setStatusCode(404).end();
             else {
                 routingContext.response()
                         .setStatusCode(200)
-                        .end(engines.get(idAsInteger).getLogger().producedSnapshots.toString());
+                        .end(engines.get(id).getLogger().producedSnapshots.toString());
 
             }
         }
@@ -320,7 +310,7 @@ public class ServerRestSimulation extends AbstractVerticle {
     }
 
 
-    private SetOfInstancesForSimulation fromJsonForSimulationToInstancesForSimulation(JSONObject jsonOfSimulation) throws Exception {
+    private SetOfInstancesForSimulation fromJsonForSimulationToInstancesForSimulation(JSONObject jsonOfSimulation) throws Exception { //metodo per trasformare il JSON di simulazione in istanze di simulazione
 
         Scenario scenario;
         List<Sensor> sensorsToInsertInScenario = new ArrayList<>();
@@ -336,7 +326,7 @@ public class ServerRestSimulation extends AbstractVerticle {
         Pattern pattern = Pattern.compile(regexTimer);
         String simDuration = jsonOfSimulation.get("simDuration").toString();
         if (simDuration.equals("00:00:00") || simDuration.equals("00:00"))
-            throw new Exception("La durata di simulazione non può stare a " + simDuration);
+            throw new Exception("Simulation time can't be set to: " + simDuration);
         Matcher matcher = pattern.matcher(simDuration);
 
         if (matcher.find() && ((simDuration.length() == 8) || simDuration.length() == 5)) {
@@ -352,7 +342,7 @@ public class ServerRestSimulation extends AbstractVerticle {
             int secondsInMillis = numberOfSecondsInInt * 1000;
 
             periodOfTimeOfSimulation = hoursInMillis + minutesInMillis + secondsInMillis;
-        } else throw new Exception("Formato durarata di simulazione non inserito correttamente: " + simDuration);
+        } else throw new Exception("Wrong simulation format: " + simDuration + ". It should be 'hh:mm:ss'");
 
         JSONObject jsonObjectOfScenario = jsonOfSimulation.getJSONObject("scenario");
         String scenName = jsonObjectOfScenario.get("sceName").toString();
@@ -367,48 +357,48 @@ public class ServerRestSimulation extends AbstractVerticle {
             long polling = Long.parseLong(stringPolling);
             String topic = jsonObjectOfSensor.get("topic").toString();
 
-            if (polling < 1) throw new Exception("Il polling time del sensore deve essere almeno di 1 secondo");
+            if (polling < 1) throw new Exception("Sensor's polling time can't be set for less than l second");
 
             Sensor currentSensor = new Sensor(senName, ref, type, polling * 1000, topic);
 
 
-            JSONArray jsonArrayOfSnapshotModelsOfSensor = jsonObjectOfSensor.getJSONArray("models");
+            JSONArray jsonArrayOfModelsOfSensor = jsonObjectOfSensor.getJSONArray("models");
 
-            for (int j = 0; j < jsonArrayOfSnapshotModelsOfSensor.length(); j++) {
-                JSONObject jsonObjectOfSnapshotModelOfSensor = jsonArrayOfSnapshotModelsOfSensor.getJSONObject(j);
+            for (int j = 0; j < jsonArrayOfModelsOfSensor.length(); j++) {
+                JSONObject jsonObjectOfModelOfSensor = jsonArrayOfModelsOfSensor.getJSONObject(j);
 
 
-                String modelName = jsonObjectOfSnapshotModelOfSensor.get("modName").toString();
-                String cat = jsonObjectOfSnapshotModelOfSensor.get("cat").toString();
-                String stringProbability = jsonObjectOfSnapshotModelOfSensor.get("probability").toString();
+                String modelName = jsonObjectOfModelOfSensor.get("modName").toString();
+                String cat = jsonObjectOfModelOfSensor.get("cat").toString();
+                String stringProbability = jsonObjectOfModelOfSensor.get("probability").toString();
                 float probability = Float.parseFloat(stringProbability);
 
-                SnapshotModel currentSnapshotModel = new SnapshotModel(modelName, cat, probability);
-                currentSensor.addModel(currentSnapshotModel);
+                Model currentModel = new Model(modelName, cat, probability);
+                currentSensor.addModel(currentModel);
 
                 MeasureType currentMeasureType;
-                JSONArray jsonArrayOfMeasureTypesOfSnapshotModelOfSensor = jsonObjectOfSnapshotModelOfSensor.getJSONArray("measures");
-                for (int k = 0; k < jsonArrayOfMeasureTypesOfSnapshotModelOfSensor.length(); k++) {
+                JSONArray jsonArrayOfMeasureTypesOfModelOfSensor = jsonObjectOfModelOfSensor.getJSONArray("measures");
+                for (int k = 0; k < jsonArrayOfMeasureTypesOfModelOfSensor.length(); k++) {
 
 
-                    JSONObject jsonObjectOfMeasureTypeOfSnapshotModelOfSensor = jsonArrayOfMeasureTypesOfSnapshotModelOfSensor.getJSONObject(k);
+                    JSONObject jsonObjectOfMeasureTypeOfModelOfSensor = jsonArrayOfMeasureTypesOfModelOfSensor.getJSONObject(k);
 
-                    String meaName = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("meaName").toString();
-                    String key = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("key").toString();
-                    String unity = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("unity").toString();
-                    String source = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("source").toString();
-                    String destination = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("destination").toString();
-                    String selArray = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("selArray").toString();
+                    String meaName = jsonObjectOfMeasureTypeOfModelOfSensor.get("meaName").toString();
+                    String key = jsonObjectOfMeasureTypeOfModelOfSensor.get("key").toString();
+                    String unity = jsonObjectOfMeasureTypeOfModelOfSensor.get("unity").toString();
+                    String source = jsonObjectOfMeasureTypeOfModelOfSensor.get("source").toString();
+                    String destination = jsonObjectOfMeasureTypeOfModelOfSensor.get("destination").toString();
+                    String selArray = jsonObjectOfMeasureTypeOfModelOfSensor.get("selArray").toString();
                     if (source.equals("")) source = null;
                     if (destination.equals("")) destination = null;
 
                     List<TriadOfValueProbabilityVariance> listOfTriadsOfValueProbabilityVariance = new ArrayList<TriadOfValueProbabilityVariance>();
 
-                    if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.has("values")) //1a priorità per i valori predefiniti
+                    if (jsonObjectOfMeasureTypeOfModelOfSensor.has("values")) //1a priorità per i valori predefiniti
                     {
-                        JSONArray jsonArrayOfTriadsOfValueProbabilityVariance = jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.getJSONArray("values");
+                        JSONArray jsonArrayOfTriadsOfValueProbabilityVariance = jsonObjectOfMeasureTypeOfModelOfSensor.getJSONArray("values");
                         if (jsonArrayOfTriadsOfValueProbabilityVariance.length() == 0)
-                            throw new Exception("L'array di values è vuoto");
+                            throw new Exception("Values array can't be empty");
                         else {
                             for (int l = 0; l < jsonArrayOfTriadsOfValueProbabilityVariance.length(); l++) {
                                 JSONObject jsonObjectOfTriadOfValueProbabilityVariance = jsonArrayOfTriadsOfValueProbabilityVariance.getJSONObject(l);
@@ -422,72 +412,93 @@ public class ServerRestSimulation extends AbstractVerticle {
 
                         }
                         currentMeasureType = new MeasureType(meaName, key, unity, source, destination, TypeOfArray.valueOf(selArray), listOfTriadsOfValueProbabilityVariance);
-                        currentSnapshotModel.addMeasureType(currentMeasureType);
-                    } else if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.has("behavior"))      //2a priorità all'andamento
+                        currentModel.addMeasureType(currentMeasureType);
+                    } else if (jsonObjectOfMeasureTypeOfModelOfSensor.has("behavior"))      //2a priorità all'andamento
                     {
 
                         Behavior behavior;
-                        if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("increasing-linear"))
+                        if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("increasing-linear"))
                             behavior = Behavior.INCREASINGLINEAR;
 
-                        else if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("decreasing-linear"))
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("decreasing-linear"))
                             behavior = Behavior.DECREASINGLINEAR;
 
-                        else if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("increasing-exponential"))
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("increasing-exponential"))
                             behavior = Behavior.INCREASINGEXPONENTIAL;
 
-                        else if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("decreasing-exponential"))
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("decreasing-exponential"))
                             behavior = Behavior.DECREASINGEXPONENTIAL;
 
-                        else if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("sinusoidal"))
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("sinusoidal"))
                             behavior = Behavior.SINUSOIDAL;
 
-                        else if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("cosinusoidal"))
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("cosinusoidal"))
                             behavior = Behavior.COSINUSOIDAL;
 
-                        else if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString().equals("gaussian"))
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("gaussian"))
                             behavior = Behavior.GAUSSIAN;
-                        else
-                            throw new Exception("L'andamento " + jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("behavior").toString() + " non è supportato dal simulatore");
-                        Double min = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("min").toString());
-                        Double max = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("max").toString());
+
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("quadratic"))
+                            behavior = Behavior.QUADRATIC;
+
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("cubic"))
+                            behavior = Behavior.CUBIC;
+
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("square-root"))
+                            behavior = Behavior.SQUAREROOT;
+
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("cubic-root"))
+                            behavior = Behavior.CUBICROOT;
+
+                        else if (jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString().equals("logarithmic"))
+                            behavior = Behavior.LOGARITHMIC;
+                        else {
+                            String behaviors = "";
+                            for (Behavior b : Behavior.values())
+                                behaviors = behaviors + b.getValue() + ". ";
+
+                            throw new Exception("Behavior '" + jsonObjectOfMeasureTypeOfModelOfSensor.get("behavior").toString() + "' is not recognized by the simulator. These are valid behaviors: " + behaviors);
+                        }
+
+                        Double min = Double.parseDouble(jsonObjectOfMeasureTypeOfModelOfSensor.get("min").toString());
+                        Double max = Double.parseDouble(jsonObjectOfMeasureTypeOfModelOfSensor.get("max").toString());
                         if (min > max)
-                            throw new Exception("Min non può essere > di Max");
+                            throw new Exception("In a measure Min key can't be greater than Max key");
                         Double prob;
                         Double variance;
 
-                        if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("prob").toString().equals(""))
+                        if (jsonObjectOfMeasureTypeOfModelOfSensor.get("prob").toString().equals(""))
                             prob = null;
                         else
-                            prob = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("prob").toString());
+                            prob = Double.parseDouble(jsonObjectOfMeasureTypeOfModelOfSensor.get("prob").toString());
 
-                        if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("variance").toString().equals(""))
+                        if (jsonObjectOfMeasureTypeOfModelOfSensor.get("variance").toString().equals(""))
                             variance = null;
                         else
-                            variance = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("variance").toString());
+                            variance = Double.parseDouble(jsonObjectOfMeasureTypeOfModelOfSensor.get("variance").toString());
 
                         currentMeasureType = new MeasureType(meaName, key, unity, min, max, source, destination, prob, variance, TypeOfArray.valueOf(selArray), behavior);
-                        currentSnapshotModel.addMeasureType(currentMeasureType);
+                        currentModel.addMeasureType(currentMeasureType);
                     } else {
 
-                        Double min = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("min").toString());
-                        Double max = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("max").toString());
+                        Double min = Double.parseDouble(jsonObjectOfMeasureTypeOfModelOfSensor.get("min").toString());
+                        Double max = Double.parseDouble(jsonObjectOfMeasureTypeOfModelOfSensor.get("max").toString());
                         if (min > max)
-                            throw new Exception("Min non può essere > di Max");
+                            throw new Exception("In a measure Min key can't be greater than Max key");
                         Double prob;
                         Double variance;
 
-                        if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("prob").toString().equals(""))
+                        if (jsonObjectOfMeasureTypeOfModelOfSensor.get("prob").toString().equals(""))
                             prob = null;
                         else
-                            prob = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("prob").toString());
+                            prob = Double.parseDouble(jsonObjectOfMeasureTypeOfModelOfSensor.get("prob").toString());
 
-                        if (jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("variance").toString().equals(""))
+                        if (jsonObjectOfMeasureTypeOfModelOfSensor.get("variance").toString().equals(""))
                             variance = null;
                         else
-                            variance = Double.parseDouble(jsonObjectOfMeasureTypeOfSnapshotModelOfSensor.get("variance").toString());
+                            variance = Double.parseDouble(jsonObjectOfMeasureTypeOfModelOfSensor.get("variance").toString());
                         currentMeasureType = new MeasureType(meaName, key, unity, min, max, source, destination, prob, variance, TypeOfArray.valueOf(selArray));
-                        currentSnapshotModel.addMeasureType(currentMeasureType);
+                        currentModel.addMeasureType(currentMeasureType);
                     }
                 }
             }
@@ -504,7 +515,7 @@ public class ServerRestSimulation extends AbstractVerticle {
 
     }
 
-    private String getFixedDateTime(DateTime dateTime) {
+    private String getFixedDateTime(DateTime dateTime) {  //metodo per ottenere il formato stringa "dd/MM/yyyy HH:mm:ss" da DateTime
         DateTimeFormatter fmt = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss");
         String fixedDateTime = fmt.print(dateTime);
         return fixedDateTime;

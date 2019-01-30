@@ -4,7 +4,7 @@ import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Handler;
 import it.filippetti.sp.simulator.model.Behavior;
 import it.filippetti.sp.simulator.model.MeasureType;
-import it.filippetti.sp.simulator.model.SnapshotModel;
+import it.filippetti.sp.simulator.model.Model;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -20,8 +20,8 @@ public class Sensor extends AbstractVerticle {
     public String ref;
     public String type;
     public long polling;   //espresso in millisecondi
-    public String topic;
-    public HashMap<Integer, SnapshotModel> snapshotModels = new HashMap<Integer, SnapshotModel>();
+    public String topic;    //topic MQTT in cui verrano pubblicati i messaggi dal sensore
+    public HashMap<Integer, Model> snapshotModels = new HashMap<Integer, Model>();
     Logger logger;
     Engine engine;
 
@@ -35,50 +35,8 @@ public class Sensor extends AbstractVerticle {
         this.topic = topic;
     }
 
-    public static double increasingLinearBehavior(double min, double max, long passedTime, int duration) //y = x
-    {
-        if (min == max) return min;
-        else {
-            double percentageOfPassedTime = ((double) passedTime * 100) / duration;
-            double valueTookFromRange = (Math.abs((max - min)) * percentageOfPassedTime) / 100;
-            return min + valueTookFromRange;
-        }
-    }
 
-    public static double decreasingLinearBehavior(double min, double max, long passedTime, int duration) //y = -x
-    {
-
-        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
-        double valueTookFromRange = ((Math.abs(max - min)) * percentageOfPassedTime) / 100;
-        return max - valueTookFromRange;
-    }
-
-    public static double increasingExponentialBehavior(double min, double max, long passedTime, int duration) //y = e^(-x)
-    {
-        double relativeXMin = Math.log(0.1);
-        double relativeXMax = Math.log(Math.abs(max - min));
-        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
-        double valueOfXTookFromRange = relativeXMin + ((Math.abs(relativeXMax - relativeXMin) * percentageOfPassedTime) / 100);
-        if ((min + Math.exp(valueOfXTookFromRange)) > max) return max;
-        else
-            return min + Math.exp(valueOfXTookFromRange);
-    }
-
-    public static double gaussianBehavior(double min, double max, long passedTime, int duration)  //y = e^(-(x^2))
-    {
-        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
-        double leftBorder = -2.0;
-        double rightBorder = 2.0;
-        double rangeBetweenBorders = Math.abs(rightBorder - leftBorder);
-        double valueOfXTookFromRange = leftBorder + ((rangeBetweenBorders * percentageOfPassedTime) / 100);
-        double valueOfYTookFromGaussian = Math.exp(-(Math.pow(valueOfXTookFromRange, 2)));
-        double percentageOfRangeOfGaussian = (valueOfYTookFromGaussian * 100) / 1;
-        double valueForMinToSum = ((Math.abs(max - min)) * percentageOfRangeOfGaussian) / 100;
-
-        return min + valueForMinToSum;
-    }
-
-    public static String randomAlphaNumeric(int length, String availableChars) {
+    public static String randomAlphaNumeric(int length, String availableChars) {  //metodo che genera una stringa con determinata lunghezza e con caratteri da usare in modo randomico
         StringBuilder builder = new StringBuilder();
         while (length-- != 0) {
             int character = (int) (Math.random() * availableChars.length());
@@ -87,7 +45,7 @@ public class Sensor extends AbstractVerticle {
         return builder.toString();
     }
 
-    public static String genId() {
+    public static String genId() {              //metodo utile per generare i campi uuid, e cuid (identificativi dello snapshot prodotto)
         String lettersAndDigits = "abcdef0123456789";
 
         String p1;
@@ -108,7 +66,20 @@ public class Sensor extends AbstractVerticle {
     @Override
     public void start() throws Exception {
 
-        System.out.println("Il sensore " + this.getRef() + " della simulazione con id:" + this.engine.getId() + " ha iniziato a produrre snapshot");
+        System.out.println("Sensor '" + this.getRef() + "' of simulation with id: '" + this.engine.getId() + "' started to produce snapshots");
+
+        JSONObject snapshot = genSnapshot();
+
+        JSONObject jsonObjectToSend = new JSONObject().
+                put("topic", getTopic()).
+                put("snapshot", snapshot);
+        vertx.eventBus().send("snapshot-for-mqtt-sender", jsonObjectToSend.toString());
+
+        DateTime dateTime = DateTime.parse(snapshot.get("tz").toString());
+        jsonObjectToSend.put("dateTime", getFixedDateTime(dateTime));
+        vertx.eventBus().send(getLogger().deploymentID(), jsonObjectToSend.toString());
+
+
         vertx.setPeriodic(this.getPollingTime(), new Handler<Long>() {
 
             @Override
@@ -132,16 +103,16 @@ public class Sensor extends AbstractVerticle {
 
     @Override
     public void stop() throws Exception {
-        System.out.println("Il sensore " + this.getRef() + " della simulazione " + this.engine.getId() + " ha terminato di produrre snapshot");
+        System.out.println("Sensor '" + this.getRef() + "' of simulation with id: '" + this.engine.getId() + "' is not producing snapshots anymore");
     }
 
     public void setEngine(Engine engine) {
         this.engine = engine;
     }
 
-    public void addModel(SnapshotModel snapshotModel) {
+    public void addModel(Model model) {
         try {
-            this.snapshotModels.put(snapshotModel.getId(), snapshotModel);
+            this.snapshotModels.put(model.getId(), model);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -179,7 +150,7 @@ public class Sensor extends AbstractVerticle {
 
         Float sumOfProb = 0.0f;
 
-        for (Map.Entry<Integer, SnapshotModel> entry : this.snapshotModels.entrySet()) {
+        for (Map.Entry<Integer, Model> entry : this.snapshotModels.entrySet()) {
 
             Float entryProb = entry.getValue().getProbability();
             sumOfProb = sumOfProb + entryProb;
@@ -187,13 +158,13 @@ public class Sensor extends AbstractVerticle {
         return sumOfProb;
     }
 
-    public HashMap<Integer, SnapshotModel> getSnapshotModels() {
+    public HashMap<Integer, Model> getSnapshotModels() {
         return this.snapshotModels;
     }
 
-    private JSONObject genSnapshot() {
+    private JSONObject genSnapshot() {      //metodo che genera lo snapshot in formato JSON
 
-        Map.Entry<Integer, SnapshotModel> pickedEntryModel = pickRandomModel();
+        Map.Entry<Integer, Model> pickedEntryModel = pickRandomModel();
 
         JSONObject snapshot = new JSONObject();
         JSONArray ruid = new JSONArray();
@@ -259,6 +230,22 @@ public class Sensor extends AbstractVerticle {
 
                         else if (measureTypeEntry.getValue().getBehavior() == Behavior.GAUSSIAN)
                             value = gaussianBehavior(min, max, passedTime, periodOfTimeOfSimulation);
+
+                        else if (measureTypeEntry.getValue().getBehavior() == Behavior.QUADRATIC)
+                            value = quadraticBehavior(min, max, passedTime, periodOfTimeOfSimulation);
+
+                        else if (measureTypeEntry.getValue().getBehavior() == Behavior.CUBIC)
+                            value = cubicBehavior(min, max, passedTime, periodOfTimeOfSimulation);
+
+                        else if (measureTypeEntry.getValue().getBehavior() == Behavior.SQUAREROOT)
+                            value = squareRootBehavior(min, max, passedTime, periodOfTimeOfSimulation);
+
+                        else if (measureTypeEntry.getValue().getBehavior() == Behavior.CUBICROOT)
+                            value = cubicRootBehavior(min, max, passedTime, periodOfTimeOfSimulation);
+
+                        else if (measureTypeEntry.getValue().getBehavior() == Behavior.LOGARITHMIC)
+                            value = logarithmicBehavior(min, max, passedTime, periodOfTimeOfSimulation);
+
                     }
 
                     probability = measureTypeEntry.getValue().getProbability();
@@ -296,13 +283,13 @@ public class Sensor extends AbstractVerticle {
 
     }
 
-    private Map.Entry<Integer, SnapshotModel> pickRandomModel() {
+    private Map.Entry<Integer, Model> pickRandomModel() {       //metodo per prendere uno dei modelli in base alla loro probabilità
 
         float inf = 0;
         float sup = 0;
 
         float r = (float) Math.random();
-        for (Map.Entry<Integer, SnapshotModel> entry : this.snapshotModels.entrySet()) {
+        for (Map.Entry<Integer, Model> entry : this.snapshotModels.entrySet()) {
             sup = sup + (entry.getValue().getProbability());
             if (r <= sup && r >= inf)
                 return entry;
@@ -313,24 +300,31 @@ public class Sensor extends AbstractVerticle {
 
     }
 
-    private String getFixedDateTime(DateTime dateTime) {
+    private String getFixedDateTime(DateTime dateTime) {    //metodo per ottenere il formato stringa "dd/MM/yyyy HH:mm:ss" da DateTime
         DateTimeFormatter fmt = DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss");
         String fixedDateTime = fmt.print(dateTime);
         return fixedDateTime;
     }
 
-    public double decreasingExponentialBehavior(double min, double max, long passedTime, int duration) //y = e^x
+    private double increasingExponentialBehavior(double min, double max, long passedTime, int duration) //y = e^x
     {
         double relativeXMin = Math.log(0.1);
         double relativeXMax = Math.log(Math.abs(max - min));
         double percentageOfPassedTime = ((double) passedTime * 100) / duration;
         double valueOfXTookFromRange = relativeXMin + ((Math.abs(relativeXMax - relativeXMin) * percentageOfPassedTime) / 100);
-        if ((max - Math.exp(valueOfXTookFromRange)) < min) return min;
-        else
-            return max - Math.exp(valueOfXTookFromRange);
+        return min + Math.exp(valueOfXTookFromRange);
     }
 
-    public double sinusoidalBehavior(double min, double max, long passedTime, int duration)     //y = sin(x)
+    private double decreasingExponentialBehavior(double min, double max, long passedTime, int duration) //y = e^-x
+    {
+        double relativeXMin = -Math.log(Math.abs(max - min));
+        double relativeXMax = -Math.log(0.1);
+        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
+        double valueOfXTookFromRange = relativeXMin + ((Math.abs(relativeXMax - relativeXMin) * percentageOfPassedTime) / 100);
+        return min + Math.exp(-valueOfXTookFromRange);
+    }
+
+    private double sinusoidalBehavior(double min, double max, long passedTime, int duration)     //y = sin(x)
     {
         double percentageOfPassedTime = ((double) passedTime * 100) / duration;
         double valueOfXInDegrees = (360 * percentageOfPassedTime) / 100;
@@ -343,7 +337,7 @@ public class Sensor extends AbstractVerticle {
         return min + valueForMinToSum;
     }
 
-    public double cosinusoidalBehavior(double min, double max, long passedTime, int duration)  //y = cos(x)
+    private double cosinusoidalBehavior(double min, double max, long passedTime, int duration)  //y = cos(x)
     {
         double percentageOfPassedTime = ((double) passedTime * 100) / duration;
         double valueOfXInDegrees = (360 * percentageOfPassedTime) / 100;
@@ -356,5 +350,83 @@ public class Sensor extends AbstractVerticle {
         return min + valueForMinToSum;
     }
 
+    private double increasingLinearBehavior(double min, double max, long passedTime, int duration) //y = x
+    {
+        if (min == max) return min;
+        else {
+            double percentageOfPassedTime = ((double) passedTime * 100) / duration;
+            double valueTookFromRange = (Math.abs((max - min)) * percentageOfPassedTime) / 100;
+            return min + valueTookFromRange;
+        }
+    }
 
+    private double decreasingLinearBehavior(double min, double max, long passedTime, int duration) //y = -x
+    {
+
+        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
+        double valueTookFromRange = ((Math.abs(max - min)) * percentageOfPassedTime) / 100;
+        return max - valueTookFromRange;
+    }
+
+
+    private double gaussianBehavior(double min, double max, long passedTime, int duration)  //y = e^(-(x^2))
+    {
+        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
+        double leftBorder = -2.0;
+        double rightBorder = 2.0;
+        double rangeBetweenBorders = Math.abs(rightBorder - leftBorder);
+        double valueOfXTookFromRange = leftBorder + ((rangeBetweenBorders * percentageOfPassedTime) / 100);
+        double valueOfYTookFromGaussian = Math.exp(-(Math.pow(valueOfXTookFromRange, 2)));
+        double percentageOfRangeOfGaussian = (valueOfYTookFromGaussian * 100) / 1;
+        double valueForMinToSum = ((Math.abs(max - min)) * percentageOfRangeOfGaussian) / 100;
+
+        return min + valueForMinToSum;
+    }
+
+
+    private double quadraticBehavior(double min, double max, long passedTime, int duration) //y = x^2
+    {
+        double relativeXMin = -Math.pow(Math.abs(max - min), 0.5);
+        double relativeXMax = Math.pow(Math.abs(max - min), 0.5);
+        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
+        double valueOfXTookFromRange = relativeXMin + ((Math.abs(relativeXMax - relativeXMin) * percentageOfPassedTime) / 100);
+        return min + Math.pow(valueOfXTookFromRange, 2);
+    }
+
+
+    private double cubicBehavior(double min, double max, long passedTime, int duration) //y = x^3
+    {
+        double relativeXMin = Math.cbrt(-Math.abs(max - min) / 2);
+        double relativeXMax = Math.cbrt(Math.abs(max - min) / 2);
+        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
+        double valueOfXTookFromRange = relativeXMin + ((Math.abs(relativeXMax - relativeXMin) * percentageOfPassedTime) / 100);
+        return max - ((Math.abs(max - min) / 2) - Math.pow(valueOfXTookFromRange, 3));
+    }
+
+    private double squareRootBehavior(double min, double max, long passedTime, int duration) //y = x^(1/2)
+    {
+        double relativeX = Math.pow(Math.abs(max - min), 2);
+        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
+        double valueOfXTookFromRange = ((Math.abs(relativeX) * percentageOfPassedTime) / 100);
+        return min + Math.sqrt(valueOfXTookFromRange);
+    }
+
+    private double cubicRootBehavior(double min, double max, long passedTime, int duration) //y = x^(1/3)
+    {
+        double relativeXMin = Math.pow(-Math.abs(max - min) / 2, 3);
+        double relativeXMax = Math.pow(Math.abs(max - min) / 2, 3);
+        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
+        double valueOfXTookFromRange = relativeXMin + ((Math.abs(relativeXMax - relativeXMin) * percentageOfPassedTime) / 100);
+        return max - ((Math.abs(max - min) / 2) - Math.cbrt(valueOfXTookFromRange));
+    }
+
+    private double logarithmicBehavior(double min, double max, long passedTime, int duration) //y = ln(x)
+    {
+        double relativeXMin = Math.exp(-6);
+        double relativeXMax = Math.exp(1.5);
+        double percentageOfPassedTime = ((double) passedTime * 100) / duration;
+        double valueOfXTookFromRange = relativeXMin + ((Math.abs(relativeXMax - relativeXMin) * percentageOfPassedTime) / 100);
+        double percentageOfTookLog = 100 - ((Math.abs(Math.log(relativeXMax) - Math.log(valueOfXTookFromRange)) * 100) / Math.abs(Math.log(relativeXMax) - Math.log(relativeXMin)));
+        return min + ((Math.abs(max - min) * percentageOfTookLog) / 100);
+    }
 }

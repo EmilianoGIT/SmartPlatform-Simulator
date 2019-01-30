@@ -7,7 +7,7 @@ import org.json.JSONObject;
 public class Logger extends AbstractVerticle {
 
     JSONArray producedSnapshots = new JSONArray();
-    private int limitOfKeptSnapshots = 10;
+    private int limitOfKeptSnapshots = 10;      //numero di snapshots massimi che il logger tiene in memoria
 
     public Logger() {
 

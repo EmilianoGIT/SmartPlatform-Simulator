@@ -15,7 +15,7 @@ public class Scenario {
         this.sceName = sceName;
 
         if (sensor.getSumOfProbability() != 1)
-            throw new Exception("Impossibile inserire un sensore in cui i modelli non abbiano somma delle probabilità uguale a 1");
+            throw new Exception("Unable to add a sensor in which the sum of probabilities is not equal to 1");
         else
             this.sensors.add(sensor);
     }
@@ -24,10 +24,10 @@ public class Scenario {
     public void addSensor(Sensor sensor) throws Exception {
 
         if (sensor.getSumOfProbability() != 1)
-            throw new Exception("Impossibile inserire un sensore in cui i modelli non abbiano somma delle probabilità uguale a 1");
+            throw new Exception("Unable to add a sensor in which the sum of probabilities is not equal to 1");
         for (Sensor s : this.sensors) {
             if (sensor.getRef().equals(s.getRef()))
-                throw new Exception("Impossibile inserire un sensore con ref già presente nello scenario");
+                throw new Exception("Unable to add a sensor which has a ref key already present in the scenario");
             else this.sensors.add(sensor);
         }
     }
