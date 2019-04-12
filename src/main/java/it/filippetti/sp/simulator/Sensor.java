@@ -21,13 +21,13 @@ public class Sensor extends AbstractVerticle {
     public String type;
     public long polling;   //espresso in millisecondi
     public String topic;    //topic MQTT in cui verrano pubblicati i messaggi dal sensore
-    public HashMap<Integer, Model> snapshotModels = new HashMap<Integer, Model>();
+    public HashMap<Integer, Model> models = new HashMap<Integer, Model>();
     Logger logger;
     Engine engine;
 
     public Sensor(String senName, String ref, String type, long polling, String topic) throws Exception       //pollingTime expressed in milliseconds
     {
-        if (polling < 1000) throw new Exception("Il polling time non può essere almeno di 1 secondo");
+        if (polling < 1000) throw new Exception("Sensor's polling time can't be set for less than l second");
         this.senName = senName;
         this.ref = ref;
         this.type = type;
@@ -66,7 +66,7 @@ public class Sensor extends AbstractVerticle {
     @Override
     public void start() throws Exception {
 
-        System.out.println("Sensor '" + this.getRef() + "' of simulation with id: '" + this.engine.getId() + "' started to produce snapshots");
+        System.out.println("Sensor '" + this.getRef() + "' of simulation with id '" + this.engine.getId() + "' started to produce snapshots");
 
         JSONObject snapshot = genSnapshot();
 
@@ -103,7 +103,7 @@ public class Sensor extends AbstractVerticle {
 
     @Override
     public void stop() throws Exception {
-        System.out.println("Sensor '" + this.getRef() + "' of simulation with id: '" + this.engine.getId() + "' is not producing snapshots anymore");
+        System.out.println("Sensor '" + this.getRef() + "' of simulation with id '" + this.engine.getId() + "' is not producing snapshots anymore");
     }
 
     public void setEngine(Engine engine) {
@@ -112,7 +112,7 @@ public class Sensor extends AbstractVerticle {
 
     public void addModel(Model model) {
         try {
-            this.snapshotModels.put(model.getId(), model);
+            this.models.put(model.getId(), model);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -150,7 +150,7 @@ public class Sensor extends AbstractVerticle {
 
         Float sumOfProb = 0.0f;
 
-        for (Map.Entry<Integer, Model> entry : this.snapshotModels.entrySet()) {
+        for (Map.Entry<Integer, Model> entry : this.models.entrySet()) {
 
             Float entryProb = entry.getValue().getProbability();
             sumOfProb = sumOfProb + entryProb;
@@ -159,7 +159,7 @@ public class Sensor extends AbstractVerticle {
     }
 
     public HashMap<Integer, Model> getSnapshotModels() {
-        return this.snapshotModels;
+        return this.models;
     }
 
     private JSONObject genSnapshot() {      //metodo che genera lo snapshot in formato JSON
@@ -255,7 +255,7 @@ public class Sensor extends AbstractVerticle {
                 {
                     double min = measureTypeEntry.getValue().getMinRange();
                     double max = measureTypeEntry.getValue().getMaxRange();
-                    value = (Math.random() * (max - min)) + min;
+                    value = (Math.random() * Math.abs(max - min)) + min;
                     probability = measureTypeEntry.getValue().getProbability();
                     variance = measureTypeEntry.getValue().getVariance();
                 }
@@ -289,7 +289,7 @@ public class Sensor extends AbstractVerticle {
         float sup = 0;
 
         float r = (float) Math.random();
-        for (Map.Entry<Integer, Model> entry : this.snapshotModels.entrySet()) {
+        for (Map.Entry<Integer, Model> entry : this.models.entrySet()) {
             sup = sup + (entry.getValue().getProbability());
             if (r <= sup && r >= inf)
                 return entry;

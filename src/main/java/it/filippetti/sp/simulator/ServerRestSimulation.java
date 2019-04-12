@@ -214,13 +214,22 @@ public class ServerRestSimulation extends AbstractVerticle {
         if (id == null) {
             routingContext.response().setStatusCode(400).end();
         } else {
-            vertx.undeploy(engines.get(id).getLogger().deploymentID());
-            vertx.eventBus().send("commands" + id, "stop");
-            engines.remove(id);
-        }
-        routingContext.response().setStatusCode(204).end();
+                if (engines.get(id) == null) {
+                    routingContext.response()
+                            .setStatusCode(404)
+                            .end();
+                } else {  //ok
+                    vertx.undeploy(engines.get(id).getLogger().deploymentID());
+                    vertx.eventBus().send("commands" + id, "stop");
+                    engines.remove(id);
+                    routingContext.response()
+                    .setStatusCode(204)
+                    .end();
+                }
+            }
 
-    }
+        }
+
 
     private void getAllEngines(RoutingContext routingContext) {
 

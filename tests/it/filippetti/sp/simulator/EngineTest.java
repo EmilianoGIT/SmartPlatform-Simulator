@@ -30,9 +30,6 @@ public class EngineTest {
         Scenario scenario = new Scenario("scenarioTest", sensor);
         int periodOfSimulationTime = 500; //500 millisecondi
         Engine engine = new Engine(simulationStartDateAsParameter, periodOfSimulationTime, scenario); //data vecchia
-        vertx.deployVerticle(engine);
-        Thread.sleep(1000);
-
     }
 
     @Test
@@ -58,7 +55,7 @@ public class EngineTest {
     }
 
     @Test
-    public void simulationEndDateOfEngineisEqualToTheSumOfSimulationStartDateAndPeriodOfSimulationTime() throws Exception {
+    public void endDateOfEngineisEqualToTheSumOfSimulationStartDateAndPeriodOfSimulation() throws Exception {
         Vertx vertx = Vertx.vertx();
         DateTime simulationStartDateAsParameter = DateTime.parse("2000-10-04T20:02:00"); //data vecchia
         MeasureType measureType1 = new MeasureType("measure1", "key1", "unity1", 20.0, 30.0, "s1", "d1", 3.0, 4.0, TypeOfArray.valueOf("M"));
